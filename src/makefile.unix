@@ -9,7 +9,7 @@ LINK:=$(CXX)
 ARCH:=$(system lscpu | head -n 1 | awk '{print $2}')
 
 DEFS=-DBOOST_SPIRIT_THREADSAFE
-DEFS += -DUSE_SECP256K1
+DEFS += $(addprefix -I,$(CURDIR)/secp256k1/include)
 DEFS += $(addprefix -I,$(CURDIR) $(CURDIR)/obj $(BOOST_INCLUDE_PATH) $(BDB_INCLUDE_PATH) $(OPENSSL_INCLUDE_PATH))
 LIBS = $(addprefix -L,$(BOOST_LIB_PATH) $(BDB_LIB_PATH) $(OPENSSL_LIB_PATH))
 
@@ -24,7 +24,7 @@ endif
 
 LIBS += \
  -Wl,-B$(LMODE) \
-   -l secp256k1
+   -l gmp
 
 # for boost 1.37, add -mt to the boost libraries
 LIBS += \
