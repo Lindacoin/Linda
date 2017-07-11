@@ -172,6 +172,13 @@ endif
 
 all: Lindad
 
+# build secp256k1
+DEFS += $(addprefix -I,$(CURDIR)/secp256k1/include)
+secp256k1/src/libsecp256k1_la-secp256k1.o:
+    @echo "Building Secp256k1 ..."; cd secp256k1; chmod 755 *; ./autogen.sh; ./configure; make; cd ..;
+Lindad: secp256k1/src/libsecp256k1_la-secp256k1.o
+
+# build leveldb
 LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
