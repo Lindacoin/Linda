@@ -70,6 +70,12 @@ BerkeleyDB 5.1 or later, which break binary wallet compatibility with the distri
 are based on BerkeleyDB 4.8. If you do not care about wallet compatibility,
 pass `--with-incompatible-bdb` to configure.
 
+To build Secp256k1:
+
+    cd src/secp256k1/ && ./configure && make
+    sudo make install
+    sudo ldconfig
+
 Optional:
 
     sudo apt-get install libminiupnpc-dev (see --with-miniupnpc and --enable-upnp-default)
