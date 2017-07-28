@@ -30,7 +30,7 @@ namespace Checkpoints
         ( 0, Params().HashGenesisBlock() )
         (10,   uint256("0xe653e137fcf430648f4e02172be2926fa60cf2d2b408c5c127fb0d3c8a384051") )
         (20,   uint256("0x22f69c926e860df361f25857beef751b90b8cb8811757ca804467d449b67c313") )
-
+        (35425,   uint256("0xe417f9c423b3f37171e3f5597bbe8b05183d22b62d302b660c934e701e2380b7") )
     ;
 
     // TestNet has no checkpoints
