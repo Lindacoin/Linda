@@ -371,7 +371,7 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternode()
     // Filter
     BOOST_FOREACH(const COutput& out, vCoins)
     {
-        if(out.tx->vout[out.i].nValue == 112*COIN) { //exactly
+        if(out.tx->vout[out.i].nValue == 30000000*COIN) { //exactly
         	filteredCoins.push_back(out);
         }
     }
@@ -384,13 +384,11 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternode()
 bool CActiveMasternode::SelectCoinsMasternode(CTxIn& vin, int64& nValueIn, CScript& pubScript, std::string strTxHash, std::string strOutputIndex)
 {
 	CWalletTx ctx;
-
 	// Convert configuration strings
 	uint256 txHash;
 	int outputIndex;
 	txHash.SetHex(strTxHash);
 	std::istringstream(strOutputIndex) >> outputIndex;
-
 	if(pwalletMain->GetTransaction(txHash, ctx)) {
 		if(ctx.vout[outputIndex].nValue == 1000*COIN) { //exactly
 			vin = CTxIn(ctx.GetHash(), outputIndex);
@@ -399,7 +397,6 @@ bool CActiveMasternode::SelectCoinsMasternode(CTxIn& vin, int64& nValueIn, CScri
 		return true;
 		}
 	}
-
     return false;
 }
 */

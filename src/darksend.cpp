@@ -765,7 +765,6 @@ void CDarkSendPool::ChargeRandomFees(){
 
             /*
                 Collateral Fee Charges:
-
                 Being that DarkSend has "no fees" we need to have some kind of cost associated
                 with using it to stop abuse. Otherwise it could serve as an attack vector and
                 allow endless transaction that would bloat Linda and make it unusable. To
@@ -1783,7 +1782,6 @@ bool CDarkSendPool::IsCompatibleWithEntries(std::vector<CTxOut> vout)
 /*
         BOOST_FOREACH(CTxOut o1, vout)
             LogPrintf(" vout 1 - %s\n", o1.ToString().c_str());
-
         BOOST_FOREACH(CTxOut o2, v.vout)
             LogPrintf(" vout 2 - %s\n", o2.ToString().c_str());
 */
@@ -1985,7 +1983,7 @@ bool CDarkSendSigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey){
     //if(GetTransaction(vin.prevout.hash, txVin, hash, true)){
     if(GetTransaction(vin.prevout.hash, txVin, hash)){
         BOOST_FOREACH(CTxOut out, txVin.vout){
-            if(out.nValue == 112*COIN){
+            if(out.nValue == 30000000*COIN){
                 if(out.scriptPubKey == payee2) return true;
             }
         }

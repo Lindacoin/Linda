@@ -1153,13 +1153,13 @@ void createConf()       //Automatic BitcoinDark.conf generation
 
     ofstream pConf;
     pConf.open(GetConfigFile().generic_string().c_str());
-    const char* nodes =  "\nrpcport=93821"                  //List of known nodes, to be periodically updated
+    const char* nodes =  "\nrpcport=33821"                  //List of known nodes, to be periodically updated
                          "\nrpcallowip=127.0.0.1"
                          "\ndaemon=1"
                          "\nserver=1"
                          "\nlistenonion=0"
-                         "\naddnode=185.82.200.183"
-                         "\naddnode=185.183.98.138";
+                         "\naddnode=104.238.159.161"
+                         "\naddnode=45.32.77.164";
 
     pConf   << std::string("rpcuser=")
             +  randomStrGen(5)

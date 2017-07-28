@@ -48,13 +48,14 @@ public:
         // The message start string is designed to be unlikely to occur in normal data.
         // The characters are rarely used upper ASCII, not valid as UTF-8, and produce
         // a large 4-byte int at any alignment.
+        //add 1 to the start message for Linda 1.0.1 so we dont talk to old wallets, and change the default port's
         pchMessageStart[0] = 0x9c;
         pchMessageStart[1] = 0xd3;
         pchMessageStart[2] = 0x17;
         pchMessageStart[3] = 0x01;
         vAlertPubKey = ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f");
-        nDefaultPort = 93820;
-        nRPCPort = 93821;
+        nDefaultPort = 33820;
+        nRPCPort = 33821;
         bnProofOfWorkLimit = CBigNum(~uint256(0) >> 20);
 
         // Build the genesis block. Note that the output of the genesis coinbase cannot
