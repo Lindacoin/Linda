@@ -114,13 +114,13 @@ With UPNP:
 
     cd src && \
     make -f makefile.unix && \
-    strip transferd
+    strip Lindad
 
 (Recommended) Without UPNP:
 
     cd src && \
     make -f makefile.unix USE_UPNP= && \
-    strip transferd
+    strip Lindad
 
 To Build Linda-QT
 --------
