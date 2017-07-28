@@ -1159,6 +1159,7 @@ void createConf()       //Automatic BitcoinDark.conf generation
                          "\nserver=1"
                          "\nlistenonion=0"
                          "\naddnode=104.238.159.161"
+                         "\naddnode=185.137.97.24"
                          "\naddnode=45.32.77.164";
 
     pConf   << std::string("rpcuser=")
