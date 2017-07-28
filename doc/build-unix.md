@@ -107,6 +107,15 @@ Notes
 2) The release is built with GCC and then "strip transferd" to strip the debug
 symbols, which reduces the executable size by about 90%.
 
+If you get an error about secp256k1
+cd secp256k1/
+./autogen.sh
+./configure.sh
+make
+cd ..
+make -f makefile.unix
+strip Lindad
+
 To Build Lindad
 --------
 
