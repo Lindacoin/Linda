@@ -66,9 +66,10 @@ You can add the repository and install using the following commands:
     sudo apt-get install libdb4.8-dev libdb4.8++-dev
     
 If that does not work alternatively download and compile: 
+    
     cd ~
     mkdir bitcoin/db4/
-
+    
     wget 'http://download.oracle.com/berkeley-db/db-4.8.30.NC.tar.gz'
     tar -xzvf db-4.8.30.NC.tar.gz
     cd db-4.8.30.NC/build_unix/
