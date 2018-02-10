@@ -530,7 +530,7 @@ void ThreadStakeMiner(CWallet *pwallet)
 
     while (true)
     {
-        while (pwallet->IsLocked())
+        while (pwallet->IsLocked(true))
         {
             nLastCoinStakeSearchInterval = 0;
             MilliSleep(1000);
