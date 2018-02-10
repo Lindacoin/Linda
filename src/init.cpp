@@ -391,7 +391,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     std::string err;
     masternodeConfig.read(err);
     if (err.empty())
-        Logprintf("error while parsing masternode.conf Error: %s \n", err);
+        LogPrintf("Error: while parsing masternode.conf Error: %s \n", err);
 
     if (mapArgs.count("-connect") && mapMultiArgs["-connect"].size() > 0) {
         // when only connecting to trusted nodes, do not seed via DNS, or listen by default
