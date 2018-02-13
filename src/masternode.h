@@ -230,7 +230,6 @@ public:
     // Deterministically calculate a given "score" for a masternode depending on how close it's hash is
     // to the blockHeight. The further away they are the better, the furthest will win the election
     // and get paid this block
-    //
 
     uint64_t CalculateScore(uint256 blockHash, CTxIn& vin);
     bool GetWinningMasternode(int nBlockHeight, CTxIn& vinOut);

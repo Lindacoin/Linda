@@ -20,7 +20,7 @@ class CValidationState;
 #define START_MASTERNODE_PAYMENTS_TESTNET 1429738064
 #define START_MASTERNODE_PAYMENTS 1429738064
 
-static const int64_t DARKSEND_COLLATERAL = (30000000*COIN);
+static const int64_t DARKSEND_COLLATERAL = (2000000*COIN);
 static const int64_t DARKSEND_FEE = (0.0001*COIN);
 static const int64_t DARKSEND_POOL_MAX = (1111.99*COIN);
 static const int REWARD_START = 51;
@@ -33,6 +33,7 @@ static const int FAIR_LAUNCH_BLOCK = 50;
     one party without comprimising the security of InstantX
     (1000/2150.0)**15 = 1.031e-05
 */
+
 #define INSTANTX_SIGNATURES_REQUIRED           20
 #define INSTANTX_SIGNATURES_TOTAL              30
 
