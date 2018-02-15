@@ -57,6 +57,7 @@ public:
     const MessageStartChars& MessageStart() const { return pchMessageStart; }
     const vector<unsigned char>& AlertKey() const { return vAlertPubKey; }
     int GetDefaultPort() const { return nDefaultPort; }
+    int GetSeedPort() const { return nSeedPort; }
     const CBigNum& ProofOfWorkLimit() const { return bnProofOfWorkLimit; }
     int SubsidyHalvingInterval() const { return nSubsidyHalvingInterval; }
     virtual const CBlock& GenesisBlock() const = 0;
@@ -77,6 +78,7 @@ protected:
     vector<unsigned char> vAlertPubKey;
     int nDefaultPort;
     int nRPCPort;
+    int nSeedPort;
     CBigNum bnProofOfWorkLimit;
     int nSubsidyHalvingInterval;
     string strDataDir;

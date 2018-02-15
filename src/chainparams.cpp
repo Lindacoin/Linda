@@ -34,6 +34,8 @@ static void convertSeed6(std::vector<CAddress> &vSeedsOut, const SeedSpec6 *data
     const int64_t nOneWeek = 7*24*60*60;
     for (unsigned int i = 0; i < count; i++)
     {
+
+
         struct in6_addr ip;
         memcpy(&ip, data[i].addr, sizeof(ip));
         CAddress addr(CService(ip, data[i].port));
@@ -56,6 +58,7 @@ public:
         vAlertPubKey = ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f");
         nDefaultPort = 33820;
         nRPCPort = 33821;
+        nSeedPort = 45444;
         bnProofOfWorkLimit = CBigNum(~uint256(0) >> 20);
 
         // Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -129,6 +132,7 @@ public:
         vAlertPubKey = ParseHex("0471dc165db490094d35cde15b1f5d755fa6ad6f2b5ed0f340e3f17f57389c3c2af113a8cbcc885bde73305a553b5640c83021128008ddf882e856336269080496");
         nDefaultPort = 28888;
         nRPCPort = 28889;
+        nSeedPort = 54444;
         strDataDir = "testnet";
 
         // Modify the testnet genesis block so the timestamp is valid for a later start.
