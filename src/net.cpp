@@ -917,7 +917,7 @@ void ThreadSocketHandler()
                             if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS)
                             {
                                 if (!pnode->fDisconnect)
-                                    LogPrintf("socket recv error %d\n", nErr);
+                                    LogPrintf("socket recv error %d - %s\n", nErr, pnode->addr.ToStringIPPort());
                                 pnode->CloseSocketDisconnect();
                             }
                         }
@@ -1096,21 +1096,23 @@ void MapPort(bool)
 
 
 static const char *strDNSSeed[][2] = {
-    {"linda-wallet.com", "dnsseed.linda-wallet.com"},
-	{"linda-wallet.com", "45.77.90.225"}
+    {"seed1.linda-wallet.com", "seed1.linda-wallet.com"},
+	{"seed2.linda-wallet.com", "seed2.linda-wallet.com"},
+	{"seed3.linda-wallet.com", "seed3.linda-wallet.com"},
+	{"seed4.linda-wallet.com", "seed4.linda-wallet.com"},
+	{"seed5.linda-wallet.com", "seed5.linda-wallet.com"},
 };
-
 
 void ThreadDNSAddressSeed()
 {
 
-    printf("ThreadDNSAddressSeed started\n");
+	LogPrintf("ThreadDNSAddressSeed started\n");
     int found = 0;
     bool fTestNet = GetBoolArg("-testnet", false);
 
     if (!fTestNet)
     {
-        printf("Loading addresses from DNS seeds (could take a while)\n");
+    	LogPrintf("Loading addresses from DNS seeds (could take a while)\n");
 
         for (unsigned int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
             if (HaveNameProxy()) {
@@ -1122,9 +1124,8 @@ void ThreadDNSAddressSeed()
                 {
                     BOOST_FOREACH(CNetAddr& ip, vaddr)
                     {
-                    	LogPrintf("Attempting to get seed from %s:%s\n", ip.ToStringIP(), Params().GetSeedPort());
                         int nOneDay = 24*3600;
-                        CAddress addr = CAddress(CService(ip, Params().GetSeedPort()));
+                        CAddress addr = CAddress(CService(ip, Params().GetDefaultPort()));
                         addr.nTime = GetTime() - 3*nOneDay - GetRand(4*nOneDay); // use a random age between 3 and 7 days old
                         vAdd.push_back(addr);
                         found++;
@@ -1135,7 +1136,7 @@ void ThreadDNSAddressSeed()
         }
     }
 
-    printf("%d addresses found from DNS seeds\n", found);
+    LogPrintf("%d addresses found from DNS seeds\n", found);
 }
 
 
