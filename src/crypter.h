@@ -11,7 +11,7 @@
 
 const unsigned int WALLET_CRYPTO_KEY_SIZE = 32;
 const unsigned int WALLET_CRYPTO_SALT_SIZE = 8;
-
+extern bool fWalletUnlockStakingOnly;
 /*
 Private key encryption is done based on a CMasterKey,
 which holds a salt and random encryption key.
@@ -159,10 +159,22 @@ public:
         return fUseCrypto;
     }
 
-    bool IsLocked() const
+    /**
+     * When sending ignoreStakingLock = true, if wallet is locked for staking
+     * it will ignore.
+     * Will return false if either wallet is locked, or locked for staking
+     */
+    bool IsLocked(bool ignoreStakingLock = false) const
     {
         if (!IsCrypted())
             return false;
+
+        if(ignoreStakingLock && fWalletUnlockStakingOnly)
+        	return false;
+
+        if(fWalletUnlockStakingOnly)
+        	return true;
+
         bool result;
         {
             LOCK(cs_KeyStore);

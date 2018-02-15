@@ -7,8 +7,7 @@
 #include <boost/lexical_cast.hpp>
 #include "clientversion.h"
 
-//
-// Bootup the masternode, look for a 500 Linda input and register on the network
+// Bootup the masternode, look for a 2M Linda input and register on the network
 //
 void CActiveMasternode::ManageStatus()
 {
@@ -371,7 +370,7 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternode()
     // Filter
     BOOST_FOREACH(const COutput& out, vCoins)
     {
-        if(out.tx->vout[out.i].nValue == 30000000*COIN) { //exactly
+        if(out.tx->vout[out.i].nValue == DARKSEND_COLLATERAL) { //exactly
         	filteredCoins.push_back(out);
         }
     }
