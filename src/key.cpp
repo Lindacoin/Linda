@@ -14,7 +14,7 @@
 #include "key.h"
 
 #ifdef USE_SECP256K1
-#include <secp256k1.h>
+#include <secp256k1/include/secp256k1.h>
 #endif
 //#else
 //#include <openssl/obj_mac.h>
