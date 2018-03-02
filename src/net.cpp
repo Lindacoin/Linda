@@ -1091,52 +1091,50 @@ void MapPort(bool)
 
 
 
-
+static const char *strDNSSeed[][2] = {
+    {"seed1.linda-wallet.com", "seed1.linda-wallet.com"},
+	{"seed2.linda-wallet.com", "seed2.linda-wallet.com"},
+	{"seed3.linda-wallet.com", "seed3.linda-wallet.com"},
+	{"seed4.linda-wallet.com", "seed4.linda-wallet.com"},
+	{"seed5.linda-wallet.com", "seed5.linda-wallet.com"},
+ };
 
 
 void ThreadDNSAddressSeed()
 {
-    // goal: only query DNS seeds if address need is acute
-    if ((addrman.size() > 0) &&
-        (!GetBoolArg("-forcednsseed", false))) {
-        MilliSleep(11 * 1000);
 
-        LOCK(cs_vNodes);
-        if (vNodes.size() >= 2) {
-            LogPrintf("P2P peers available. Skipped DNS seeding.\n");
-            return;
-        }
-    }
-
-    const vector<CDNSSeedData> &vSeeds = Params().DNSSeeds();
+	LogPrintf("ThreadDNSAddressSeed started\n");
     int found = 0;
+    bool fTestNet = GetBoolArg("-testnet", false);
 
-    LogPrintf("Loading addresses from DNS seeds (could take a while)\n");
+    if (!fTestNet)
+    {
+    	LogPrintf("Loading addresses from DNS seeds (could take a while)\n");
 
-    BOOST_FOREACH(const CDNSSeedData &seed, vSeeds) {
-        if (HaveNameProxy()) {
-            AddOneShot(seed.host);
-        } else {
-            vector<CNetAddr> vIPs;
-            vector<CAddress> vAdd;
-            if (LookupHost(seed.host.c_str(), vIPs))
-            {
-                BOOST_FOREACH(CNetAddr& ip, vIPs)
+        for (unsigned int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
+            if (HaveNameProxy()) {
+                AddOneShot(strDNSSeed[seed_idx][1]);
+            } else {
+                vector<CNetAddr> vaddr;
+                vector<CAddress> vAdd;
+                if (LookupHost(strDNSSeed[seed_idx][1], vaddr))
                 {
-                    int nOneDay = 24*3600;
-                    CAddress addr = CAddress(CService(ip, Params().GetDefaultPort()));
-                    addr.nTime = GetTime() - 3*nOneDay - GetRand(4*nOneDay); // use a random age between 3 and 7 days old
-                    vAdd.push_back(addr);
-                    found++;
+                    BOOST_FOREACH(CNetAddr& ip, vaddr)
+                    {
+                        int nOneDay = 24*3600;
+                        CAddress addr = CAddress(CService(ip, Params().GetDefaultPort()));
+                        addr.nTime = GetTime() - 3*nOneDay - GetRand(4*nOneDay); // use a random age between 3 and 7 days old
+                        vAdd.push_back(addr);
+                        found++;
+                    }
                 }
+                addrman.Add(vAdd, CNetAddr(strDNSSeed[seed_idx][0], true));
             }
-            addrman.Add(vAdd, CNetAddr(seed.name, true));
         }
     }
 
     LogPrintf("%d addresses found from DNS seeds\n", found);
 }
-
 
 
 

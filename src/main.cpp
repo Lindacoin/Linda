@@ -4168,22 +4168,27 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         ResendWalletTransactions();
 
         // Address refresh broadcast
+        static int64_t nBroadcastInterval = 60 * 5;
         static int64_t nLastRebroadcast;
-        if (!IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
-        {
-            LOCK(cs_vNodes);
-            BOOST_FOREACH(CNode* pnode, vNodes)
-            {
-                // Periodically clear setAddrKnown to allow refresh broadcasts
-                if (nLastRebroadcast)
-                    pnode->setAddrKnown.clear();
 
-                // Rebroadcast our address
-                AdvertizeLocal(pnode);
-            }
-            if (!vNodes.empty())
-                nLastRebroadcast = GetTime();
-        }
+        if (!IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > nBroadcastInterval))
+		{
+		   LOCK(cs_vNodes);
+		   BOOST_FOREACH(CNode* pnode, vNodes)
+		   {
+			   // Periodically clear setAddrKnown to allow refresh broadcasts
+			   if (GetTime() - nLastRebroadcast > (nBroadcastInterval * 60 * 24))
+			   {
+				   pnode->setAddrKnown.clear();
+			   }
+
+			   // Rebroadcast our address
+			   AdvertizeLocal(pnode);
+		   }
+		   if (!vNodes.empty())
+			   nLastRebroadcast = GetTime();
+		}
+
 
         //
         // Message: addr
