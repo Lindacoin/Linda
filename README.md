@@ -16,4 +16,6 @@ RPC Port: `33821`
 
 Proof of Ownership: @dev_sk8r
 
-**Latest Boostrap**
+**For faster syncing, you may use this bootstrap files.
+Depending on your operating system, locate the Linda Data Folder and extract the files there.**
+https://www.dropbox.com/s/90d3qxu72syb5et/bootstrap_latest.zip?dl=0
