@@ -17,4 +17,3 @@ RPC Port: `33821`
 Proof of Ownership: @dev_sk8r
 
 **Latest Boostrap**
-http://www.lagserver.com/lindaproject/bootstrap_latest.zip
