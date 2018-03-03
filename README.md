@@ -20,5 +20,4 @@ Proof of Ownership: @dev_sk8r
 
 **Depending on your operating system, locate the Linda Data Folder and extract the files there.**
 
-
-https://www.dropbox.com/s/90d3qxu72syb5et/bootstrap_latest.zip?dl=0
+https://www.dropbox.com/s/90d3qxu72syb5et/bootstrap_latest.zip?dl=0 [Updated: March 03, 2018]
