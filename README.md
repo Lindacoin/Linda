@@ -14,7 +14,7 @@ Port: `33820`
 
 RPC Port: `33821`
 
-Proof of Ownership: @dev_sk8r
+
 
 **For faster syncing, you may use this bootstrap files.**
 
