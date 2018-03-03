@@ -443,9 +443,13 @@ WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
     {
         return Unencrypted;
     }
+    else if(wallet->IsLocked(true))
+    {
+    	return Locked;
+    }
     else if(wallet->IsLocked())
     {
-        return Locked;
+        return LockedForStaking;
     }
     else if (wallet->fWalletUnlockAnonymizeOnly)
     {
@@ -565,7 +569,7 @@ void WalletModel::unsubscribeFromCoreSignals()
 // WalletModel::UnlockContext implementation
 WalletModel::UnlockContext WalletModel::requestUnlock()
 {
-    bool was_locked = getEncryptionStatus() == Locked;
+    bool was_locked = getEncryptionStatus() == Locked || getEncryptionStatus() == LockedForStaking;
     
     if ((!was_locked) && fWalletUnlockStakingOnly && isAnonymizeOnlyUnlocked())
     {

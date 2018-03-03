@@ -167,20 +167,26 @@ public:
 	*/
    bool IsLocked(bool ignoreStakingLock = false) const
    {
+	   //If there is no password set -> wallet is not locked
 	   if (!IsCrypted())
+	   {
 		   return false;
+	   }
 
-	   if(ignoreStakingLock && fWalletUnlockStakingOnly)
-		return false;
 
-	   if(fWalletUnlockStakingOnly)
-		return true;
+	   //If staking lock should be considered, and it is locked for staking only -> return true
+	   if(!ignoreStakingLock && fWalletUnlockStakingOnly)
+	   {
+		   return true;
+	   }
+
 
 	   bool result;
 	   {
 		   LOCK(cs_KeyStore);
 		   result = vMasterKey.empty();
 	   }
+
 	   return result;
    }
 
