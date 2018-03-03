@@ -154,7 +154,20 @@ void AskPassphraseDialog::accept()
         }
         else
         {
-            fWalletUnlockStakingOnly = ui->stakingCheckBox->isChecked();
+        	fWalletUnlockStakingOnly = ui->stakingCheckBox->isChecked();
+        	if(fWalletUnlockStakingOnly)
+        	{
+        		QMessageBox::information(this, tr("Wallet Unlocked"),
+        	        	                                     tr("You have successfully unlocked your wallet (staking=yes)"));
+
+        	}
+        	else
+        	{
+        		QMessageBox::information(this, tr("Wallet Unlocked"),
+        	        	                                     tr("You have successfully unlocked your wallet (staking=no)"));
+
+        	}
+
             QDialog::accept(); // Success
         }
         break;

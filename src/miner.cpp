@@ -530,17 +530,17 @@ void ThreadStakeMiner(CWallet *pwallet)
 
     while (true)
     {
-        while (pwallet->IsLocked())
+        while (pwallet->IsLocked(true))
         {
             nLastCoinStakeSearchInterval = 0;
-            MilliSleep(1000);
+            MilliSleep(10000);
         }
 
         while (vNodes.empty() || IsInitialBlockDownload())
         {
             nLastCoinStakeSearchInterval = 0;
             fTryToSync = true;
-            MilliSleep(1000);
+            MilliSleep(10000);
         }
 
         if (fTryToSync)
