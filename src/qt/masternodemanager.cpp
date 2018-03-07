@@ -13,7 +13,7 @@
 #include <QDebug>
 #include <QScrollArea>
 #include <QScroller>
-
+#include <QDateTime>
 
 MasternodeManager::MasternodeManager(QWidget *parent) :
     QWidget(parent),
@@ -64,8 +64,12 @@ void MasternodeManager::updateNodeList()
 	QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
 	QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn.vin, pindexBest->nHeight)));
 	QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::number((qint64)(mn.lastTimeSeen - mn.now)));
-	QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::number((qint64)mn.lastTimeSeen));
+	int64_t unixTime = mn.lastTimeSeen;
+	QDateTime timestamp;
+	timestamp.setTime_t(unixTime);
 	
+	QTableWidgetItem *lastSeenItem = new QTableWidgetItem(timestamp.toString(Qt::SystemLocaleShortDate));
+
 	CScript pubkey;
         pubkey =GetScriptForDestination(mn.pubkey.GetID());
         CTxDestination address1;

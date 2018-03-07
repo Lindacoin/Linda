@@ -4300,7 +4300,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 {
-    int64_t ret = static_cast<int64_t>(blockValue * 0.733333333333333333); //67%
+    int64_t ret = static_cast<int64_t>(0); //100% masternode
 
     return ret;
 }
