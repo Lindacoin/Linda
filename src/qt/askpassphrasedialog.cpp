@@ -158,13 +158,13 @@ void AskPassphraseDialog::accept()
         	if(fWalletUnlockStakingOnly)
         	{
         		QMessageBox::information(this, tr("Wallet Unlocked"),
-        	        	                                     tr("You have successfully unlocked your wallet (staking=yes)"));
+        	        	                                     tr("You have successfully unlocked your wallet for staking only."));
 
         	}
         	else
         	{
         		QMessageBox::information(this, tr("Wallet Unlocked"),
-        	        	                                     tr("You have successfully unlocked your wallet (staking=no)"));
+        	        	                                     tr("You have successfully unlocked your wallet"));
 
         	}
 

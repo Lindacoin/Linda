@@ -833,6 +833,7 @@ debug/qrc_bitcoin.cpp: src/qt/bitcoin.qrc \
 		src/qt/res/icons/connect3_16.png \
 		src/qt/res/icons/connect4_16.png \
 		src/qt/res/icons/remove.png \
+		src/qt/res/icons/black/lock_staking.png \
 		src/qt/res/icons/debugwindow.png \
 		src/qt/res/icons/edit.png \
 		src/qt/res/icons/transaction0.png \
@@ -865,6 +866,7 @@ debug/qrc_bitcoin.cpp: src/qt/bitcoin.qrc \
 		src/qt/res/icons/black/connect3_16.png \
 		src/qt/res/icons/black/connect4_16.png \
 		src/qt/res/icons/black/tx_inout.png \
+		src/qt/res/icons/black/lock_staking.png \
 		src/qt/res/icons/black/lock_open.png \
 		src/qt/res/icons/black/synced.png \
 		src/qt/res/icons/black/tx_mined.png \
