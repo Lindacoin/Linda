@@ -1153,14 +1153,22 @@ void createConf()       //Automatic BitcoinDark.conf generation
 
     ofstream pConf;
     pConf.open(GetConfigFile().generic_string().c_str());
-    const char* nodes =  "\nrpcport=33821"                  //List of known nodes, to be periodically updated
-                         "\nrpcallowip=127.0.0.1"
-                         "\ndaemon=1"
-                         "\nserver=1"
-                         "\nlistenonion=0"
-                         "\naddnode=104.238.159.161"
-                         "\naddnode=185.137.97.24"
-                         "\naddnode=45.32.77.164";
+    const char* nodes = "\nrpcport=33821"                  //List of known nodes, to be periodically updated
+                        "\nrpcallowip=127.0.0.1"
+                        "\ndaemon=1"
+                        "\nserver=1"
+                        "\nlistenonion=0"
+    					"\naddnode=seed1.linda-wallet.com"
+    					"\naddnode=seed2.linda-wallet.com"
+						"\naddnode=seed3.linda-wallet.com"
+						"\naddnode=seed4.linda-wallet.com"
+						"\naddnode=seed5.linda-wallet.com"
+						"\naddnode=seed6.linda-wallet.com"
+						"\naddnode=seed7.linda-wallet.com"
+						"\naddnode=seed8.linda-wallet.com"
+						"\naddnode=seed9.linda-wallet.com"
+						"\naddnode=seed10.linda-wallet.com"
+    					"\naddnode=seed11.linda-wallet.com";
 
     pConf   << std::string("rpcuser=")
             +  randomStrGen(5)

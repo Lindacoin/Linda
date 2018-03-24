@@ -165,8 +165,12 @@ bool CWallet::LoadCScript(const CScript& redeemScript)
 
 bool CWallet::Lock()
 {
-    if (IsLocked())
-        return true;
+	LogPrintf("Attempting to lock wallet\n");
+    if (IsLocked(true)){
+    	LogPrintf("Wallet is already locked\n");
+    	return true;
+    }
+
     
     if (fDebug)
         printf("Locking wallet.\n");

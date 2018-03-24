@@ -13,10 +13,24 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
 }
 
-linux {
-    SECP256K1_LIB_PATH = /usr/local/lib
-    SECP256K1_INCLUDE_PATH = /usr/local/include
+DEPS_PATH = /c/deps
+windows {
+	SECP256K1_LIB_PATH = src/secp256k1/.libs
+	SECP256K1_INCLUDE_PATH = src/secp256k1/include
+	MINIUPNPC_LIB_PATH = $$DEPS_PATH/miniupnpc-1.9
+	MINIUPNPC_INCLUDE_PATH = $$DEPS_PATH/miniupnpc-1.9
+	BOOST_LIB_PATH = $$DEPS_PATH/boost_1_58_0/stage/lib
+	BOOST_INCLUDE_PATH = $$DEPS_PATH/boost_1_58_0
+	BDB_LIB_PATH = $$DEPS_PATH/db-4.8.30.NC/build_unix
+	BDB_INCLUDE_PATH = $$DEPS_PATH/db-4.8.30.NC/build_unix
+	#OPENSSL_LIB_PATH = $$DEPS_PATH/
+	#OPENSSL_INCLUDE_PATH = $$DEPS_PATH/
 }
+linux {
+	SECP256K1_LIB_PATH = src/secp256k1/.libs
+	SECP256K1_INCLUDE_PATH = src/secp256k1/include
+}
+
 
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt

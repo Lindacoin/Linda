@@ -1,2 +1,6 @@
 build/
 src/qt/locale/*.qm
+/bin/
+
+release/
+debug/
