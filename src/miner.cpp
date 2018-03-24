@@ -156,7 +156,8 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake, int64_t* pFe
     // a transaction spammer can cheaply fill blocks using
     // 1-satoshi-fee transactions. It should be set above the real
     // cost to you of processing a transaction.
-    int64_t nMinTxFee = MIN_TX_FEE;
+    // MBK: Support the tx fee increase at blockheight
+    int64_t nMinTxFee = (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1);
     if (mapArgs.count("-mintxfee"))
         ParseMoney(mapArgs["-mintxfee"], nMinTxFee);
 
@@ -358,7 +359,20 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake, int64_t* pFe
             LogPrintf("CreateNewBlock(): total size %u\n", nBlockSize);
 // >Linda<
         if (!fProofOfStake)
-            pblock->vtx[0].vout[0].nValue = GetProofOfWorkReward(nFees, nHeight);
+        {
+            // MBK: Determine which PoW reward function to call basd on wallet version
+            int64_t nReward = 0;
+            if(CURRENT_WALLET_VERSION == 2)
+            {
+                nReward = GetProofOfWorkRewardV2(nFees, nHeight);
+            }
+            else
+            {
+                nReward = GetProofOfWorkReward(nFees, nHeight);
+            }
+
+            pblock->vtx[0].vout[0].nValue = nReward;
+        }
 
         if (pFees)
             *pFees = nFees;
