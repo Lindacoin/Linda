@@ -408,24 +408,6 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternodeV2()
             }
 
         }
-        else if(nBestHeight >= MASTERNODE_V2_START_BLOCK)
-        {
-            // MBK: Provide activation for 2 and 30 million masternodes (this may change in the future)
-            if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V1 || out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V2)
-            { 
-                filteredCoins.push_back(out);
-            }
-
-        }
-        else if(nBestHeight >= MASTERNODE_V2_FULLSWAP_BLOCK)
-        {
-            // MBK: Provide activation for 2 and 30 million masternodes (this may change in the future)
-            if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V2)
-            { 
-                filteredCoins.push_back(out);
-            }
-
-        }
         else if(nBestHeight >= MASTERNODE_V2_STOP_BLOCK)
         {
             // MBK: Have reached the blockheight when masternodes no longer activate (this may change in the future)
@@ -434,7 +416,7 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternodeV2()
         }
         else
         {
-            // MBK: Have reached the blockheight when full swap to 2m masternode activation (this may change in the future)
+            // MBK: Have reached the blockheight when swap to 2m masternode activation starts
             if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V2)
             { 
                 filteredCoins.push_back(out);
