@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "protocol.h"
+#include "main.h"
 #include "activemasternode.h"
 #include <boost/lexical_cast.hpp>
 #include "clientversion.h"
@@ -362,6 +363,10 @@ bool CActiveMasternode::GetVinFromOutput(COutput out, CTxIn& vin, CPubKey& pubke
 // get all possible outputs for running masternode
 vector<COutput> CActiveMasternode::SelectCoinsMasternode()
 {
+    // MBK: Process V2 masternode coing selection 
+    if(CURRENT_WALLET_VERSION == 2)
+        return SelectCoinsMasternodeV2();
+
     vector<COutput> vCoins;
     vector<COutput> filteredCoins;
 
@@ -371,13 +376,76 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternode()
     // Filter
     BOOST_FOREACH(const COutput& out, vCoins)
     {
-        if(out.tx->vout[out.i].nValue == 30000000*COIN) { //exactly
+        // MBK: Replaced the value with the global collateral constant
+        if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V1)
+        { 
         	filteredCoins.push_back(out);
         }
+
     }
+
     return filteredCoins;
 }
 
+// MBK: Process masternode coin selection for V2 wallet
+vector<COutput> CActiveMasternode::SelectCoinsMasternodeV2()
+{
+    vector<COutput> vCoins;
+    vector<COutput> filteredCoins;
+
+    // Retrieve all possible outputs
+    pwalletMain->AvailableCoins(vCoins);
+
+    // Filter
+    BOOST_FOREACH(const COutput& out, vCoins)
+    {
+        if(nBestHeight < MASTERNODE_V2_START_BLOCK)
+        {
+            // MBK: Have note reached blockheight to swap 2m/30m masternode activation (this may change in the future)
+            if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V1)
+            { 
+                filteredCoins.push_back(out);
+            }
+
+        }
+        else if(nBestHeight >= MASTERNODE_V2_START_BLOCK)
+        {
+            // MBK: Provide activation for 2 and 30 million masternodes (this may change in the future)
+            if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V1 || out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V2)
+            { 
+                filteredCoins.push_back(out);
+            }
+
+        }
+        else if(nBestHeight >= MASTERNODE_V2_FULLSWAP_BLOCK)
+        {
+            // MBK: Provide activation for 2 and 30 million masternodes (this may change in the future)
+            if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V2)
+            { 
+                filteredCoins.push_back(out);
+            }
+
+        }
+        else if(nBestHeight >= MASTERNODE_V2_STOP_BLOCK)
+        {
+            // MBK: Have reached the blockheight when masternodes no longer activate (this may change in the future)
+            LogPrintf("CActiveMasternode::SelectCoinsMasternodeV2() -> Cannot select coins, Masternode activation has ended.");
+            return filteredCoins;
+        }
+        else
+        {
+            // MBK: Have reached the blockheight when full swap to 2m masternode activation (this may change in the future)
+            if(out.tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_V2)
+            { 
+                filteredCoins.push_back(out);
+            }
+
+        }
+
+    }
+
+    return filteredCoins;
+}
 
 /* select coins with specified transaction hash and output index */
 /*
