@@ -11,6 +11,7 @@
 #include "init.h"
 #include "miner.h"
 #include "kernel.h"
+#include "util.h"
 
 #include <boost/assign/list_of.hpp>
 
@@ -46,7 +47,20 @@ Value getsubsidy(const Array& params, bool fHelp)
             "getsubsidy [nTarget]\n"
             "Returns proof-of-work subsidy value for the specified value of target.");
 
-    return (uint64_t)GetProofOfWorkReward(0,pindexBest->nHeight);
+    // MBK: Calculate PoW reward based on wallet version
+    uint64_t nReward = 0;
+    if(CURRENT_WALLET_VERSION == 2)
+    {
+        nReward = GetProofOfWorkRewardV2(0,pindexBest->nHeight); 
+    }
+    else
+    { 
+        nReward = GetProofOfWorkReward(0,pindexBest->nHeight); 
+    }
+    
+    // MBK: Added some additional debugging information
+    if (MBK_EXTRA_DEBUG) LogPrintf("getsubsidy() -> nPoWSubsidy=%d", nReward);
+    return (uint64_t)nReward;
 }
 
 Value getstakesubsidy(const Array& params, bool fHelp)
@@ -73,7 +87,20 @@ Value getstakesubsidy(const Array& params, bool fHelp)
     if (!tx.GetCoinAge(txdb, nCoinAge))
         throw JSONRPCError(RPC_MISC_ERROR, "GetCoinAge failed");
 
-    return (uint64_t)GetProofOfStakeReward(nCoinAge, 0, pindexBest->nHeight);
+    // MBK: Calculate the PoS reward based on the current wallet version
+    uint64_t nStakeReward = 0;
+    if(CURRENT_WALLET_VERSION == 2) 
+    {
+        nStakeReward = GetProofOfStakeRewardV2(nCoinAge, 0, pindexBest->nHeight);
+    }
+    else
+    {
+        nStakeReward = GetProofOfStakeReward(nCoinAge, 0, pindexBest->nHeight);
+    }
+
+    // MBK: Added some additional debugging information
+    if (MBK_EXTRA_DEBUG) LogPrintf("getstakesubsidy() -> [%s] nStakeSubsidy=%d",(CURRENT_WALLET_VERSION==2?"V2":""), nStakeReward);
+    return (uint64_t)nStakeReward;
 }
 
 Value getmininginfo(const Array& params, bool fHelp)
@@ -97,7 +124,16 @@ Value getmininginfo(const Array& params, bool fHelp)
     diff.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
     obj.push_back(Pair("difficulty",    diff));
 
-    obj.push_back(Pair("blockvalue",    (uint64_t)GetProofOfWorkReward(0, pindexBest->nHeight)));
+    // MBK: Return the correct rewards based on the current blockheight
+    if(CURRENT_WALLET_VERSION == 2)
+    {
+        obj.push_back(Pair("blockvalue",    (uint64_t)GetProofOfWorkRewardV2(0, pindexBest->nHeight)));
+    }
+    else 
+    {
+        obj.push_back(Pair("blockvalue",    (uint64_t)GetProofOfWorkReward(0, pindexBest->nHeight)));
+    }
+
     obj.push_back(Pair("netmhashps",     GetPoWMHashPS()));
     obj.push_back(Pair("netstakeweight", GetPoSKernelPS()));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));

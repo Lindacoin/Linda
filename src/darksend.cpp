@@ -283,8 +283,9 @@ void ProcessMessageDarksend(CNode* pfrom, std::string& strCommand, CDataStream& 
                     missingTx = true;
                 }
             }
-
-            if (nValueIn > DARKSEND_POOL_MAX) {
+            
+            // MBK: Added support for block height darksend fee change
+            if (nValueIn > (nBestHeight >= DARKSEND_V2_START_BLOCK ? DARKSEND_POOL_MAX_V2 : DARKSEND_POOL_MAX_V1)/*DARKSEND_POOL_MAX*/) {
                 LogPrintf("dsi -- more than darksend pool max! %s\n", tx.ToString().c_str());
                 error = _("Value more than Darksend pool maximum allows.");
                 pfrom->PushMessage("dssu", darkSendPool.sessionID, darkSendPool.GetState(), darkSendPool.GetEntriesCount(), MASTERNODE_REJECTED, error);
@@ -410,7 +411,8 @@ int GetInputDarksendRounds(CTxIn in, int rounds)
         // bounds check
         if(in.prevout.n >= tx.vout.size()) return -4;
 
-        if(tx.vout[in.prevout.n].nValue == DARKSEND_FEE) return -3;
+        // MBK: Added support for block height darksend fee change 
+        if(tx.vout[in.prevout.n].nValue == (nBestHeight >= DARKSEND_V2_START_BLOCK ? DARKSEND_FEE_V2 : DARKSEND_FEE_V1)/*DARKSEND_FEE*/) return -3;
 
         //make sure the final output is non-denominate
         if(rounds == 0 && !pwalletMain->IsDenominatedAmount(tx.vout[in.prevout.n].nValue)) return -2; //NOT DENOM
@@ -965,7 +967,8 @@ bool CDarkSendPool::IsCollateralValid(const CTransaction& txCollateral){
     }
 
     //collateral transactions are required to pay out DARKSEND_COLLATERAL as a fee to the miners
-    if(nValueIn-nValueOut < DARKSEND_COLLATERAL) {
+    // MBK: Added support for block height darksend fee change
+    if(nValueIn-nValueOut < (nBestHeight >= DARKSEND_V2_START_BLOCK ? DARKSEND_COLLATERAL_V2 : DARKSEND_COLLATERAL_V1)/*DARKSEND_COLLATERAL*/) {
         if(fDebug) LogPrintf ("CDarkSendPool::IsCollateralValid - did not include enough fees in transaction %d\n%s\n", nValueOut-nValueIn, txCollateral.ToString().c_str());
         return false;
     }
@@ -1395,19 +1398,30 @@ bool CDarkSendPool::DoAutomaticDenominating(bool fDryRun, bool ready)
     std::vector<COutput> vCoins2;
     int64_t nValueMin = CENT;
     int64_t nValueIn = 0;
+    
+    // MBK: Added support for block height darksend fee and collateral change
+    int64_t nDarkSendFee        = DARKSEND_FEE_V1;
+    int64_t nDarkSendCollateral = DARKSEND_COLLATERAL_V1;
+    int64_t nDarkSendPoolMax    = DARKSEND_POOL_MAX_V1;
+    if(nBestHeight >= DARKSEND_V2_START_BLOCK)
+    {
+        nDarkSendFee        = DARKSEND_FEE_V2;
+        nDarkSendCollateral = DARKSEND_COLLATERAL_V2;
+        nDarkSendPoolMax    = DARKSEND_POOL_MAX_V2;
+    }
 
     // should not be less than fees in DARKSEND_FEE + few (lets say 5) smallest denoms
-    int64_t nLowestDenom = DARKSEND_FEE + darkSendDenominations[darkSendDenominations.size() - 1]*5;
+    int64_t nLowestDenom = nDarkSendFee/*DARKSEND_FEE*/ + darkSendDenominations[darkSendDenominations.size() - 1]*5;
 
     // if there are no DS collateral inputs yet
     if(!pwalletMain->HasCollateralInputs())
         // should have some additional amount for them
-        nLowestDenom += (DARKSEND_COLLATERAL*4)+DARKSEND_FEE*2;
+        nLowestDenom += (nDarkSendCollateral/*DARKSEND_COLLATERAL*/*4)+nDarkSendFee/*DARKSEND_FEE*/*2;
 
     int64_t nBalanceNeedsAnonymized = nAnonymizeLindaAmount*COIN - pwalletMain->GetAnonymizedBalance();
 
     // if balanceNeedsAnonymized is more than pool max, take the pool max
-    if(nBalanceNeedsAnonymized > DARKSEND_POOL_MAX) nBalanceNeedsAnonymized = DARKSEND_POOL_MAX;
+    if(nBalanceNeedsAnonymized > nDarkSendPoolMax/*DARKSEND_POOL_MAX*/) nBalanceNeedsAnonymized = nDarkSendPoolMax/*DARKSEND_POOL_MAX*/;
 
     // if balanceNeedsAnonymized is more than non-anonymized, take non-anonymized
     int64_t nBalanceNotYetAnonymized = pwalletMain->GetBalance() - pwalletMain->GetAnonymizedBalance();
@@ -1677,8 +1691,17 @@ bool CDarkSendPool::MakeCollateralAmounts()
     std::string strFail = "";
     vector< pair<CScript, int64_t> > vecSend;
 
-    vecSend.push_back(make_pair(scriptChange, (DARKSEND_COLLATERAL*2)+DARKSEND_FEE));
-    vecSend.push_back(make_pair(scriptChange, (DARKSEND_COLLATERAL*2)+DARKSEND_FEE));
+    // MBK: Added support for block height darksend fee and collateral change
+    int64_t nDarkSendFee        = DARKSEND_FEE_V1;
+    int64_t nDarkSendCollateral = DARKSEND_COLLATERAL_V1;
+    if(nBestHeight >= DARKSEND_V2_START_BLOCK)
+    {
+        nDarkSendFee        = DARKSEND_FEE_V2;
+        nDarkSendCollateral = DARKSEND_COLLATERAL_V2;
+    }
+ 
+    vecSend.push_back(make_pair(scriptChange, (nDarkSendCollateral/*DARKSEND_COLLATERAL*/*2)+nDarkSendFee/*DARKSEND_FEE*/));
+    vecSend.push_back(make_pair(scriptChange, (nDarkSendCollateral/*DARKSEND_COLLATERAL*/*2)+nDarkSendFee/*DARKSEND_FEE*/));
 
     CCoinControl *coinControl=NULL;
     int32_t nChangePos;
@@ -1722,12 +1745,21 @@ bool CDarkSendPool::CreateDenominated(int64_t nTotalValue)
     vector< pair<CScript, int64_t> > vecSend;
     int64_t nValueLeft = nTotalValue;
 
+    // MBK: Added support for block height darksend fee and collateral change
+    int64_t nDarkSendFee        = DARKSEND_FEE_V1;
+    int64_t nDarkSendCollateral = DARKSEND_COLLATERAL_V1;
+    if(nBestHeight >= DARKSEND_V2_START_BLOCK)
+    {
+        nDarkSendFee        = DARKSEND_FEE_V2;
+        nDarkSendCollateral = DARKSEND_COLLATERAL_V2;
+    }
+
     // ****** Add collateral outputs ************ /
     if(!pwalletMain->HasCollateralInputs()) {
-        vecSend.push_back(make_pair(scriptChange, (DARKSEND_COLLATERAL*2)+DARKSEND_FEE));
-        nValueLeft -= (DARKSEND_COLLATERAL*2)+DARKSEND_FEE;
-        vecSend.push_back(make_pair(scriptChange, (DARKSEND_COLLATERAL*2)+DARKSEND_FEE));
-        nValueLeft -= (DARKSEND_COLLATERAL*2)+DARKSEND_FEE;
+        vecSend.push_back(make_pair(scriptChange, (nDarkSendCollateral/*DARKSEND_COLLATERAL*/*2)+nDarkSendFee/*DARKSEND_FEE*/));
+        nValueLeft -= (nDarkSendCollateral/*DARKSEND_COLLATERAL*/*2)+nDarkSendFee/*DARKSEND_FEE*/;
+        vecSend.push_back(make_pair(scriptChange, (nDarkSendCollateral/*DARKSEND_COLLATERAL*/*2)+nDarkSendFee/*DARKSEND_FEE*/));
+        nValueLeft -= (nDarkSendCollateral/*DARKSEND_COLLATERAL*/*2)+nDarkSendFee/*DARKSEND_FEE*/;
     }
 
     // ****** Add denoms ************ /
@@ -1735,7 +1767,7 @@ bool CDarkSendPool::CreateDenominated(int64_t nTotalValue)
         int nOutputs = 0;
 
         // add each output up to 10 times until it can't be added again
-        while(nValueLeft - v >= DARKSEND_FEE && nOutputs <= 10) {
+        while(nValueLeft - v >= nDarkSendFee/*DARKSEND_FEE*/ && nOutputs <= 10) {
             CScript scriptChange;
             CPubKey vchPubKey;
             //use a unique change address

@@ -29,7 +29,7 @@
 using namespace std;
 
 // Settings
-int64_t nTransactionFee = MIN_TX_FEE;
+int64_t nTransactionFee = 0;
 int64_t nReserveBalance = 0;
 int64_t nMinimumInputValue = 0;
 
@@ -2302,11 +2302,20 @@ bool CWallet::HasCollateralInputs() const
 
 bool CWallet::IsCollateralAmount(int64_t nInputAmount) const
 {
-    return  nInputAmount == (DARKSEND_COLLATERAL * 5)+DARKSEND_FEE ||
-            nInputAmount == (DARKSEND_COLLATERAL * 4)+DARKSEND_FEE ||
-            nInputAmount == (DARKSEND_COLLATERAL * 3)+DARKSEND_FEE ||
-            nInputAmount == (DARKSEND_COLLATERAL * 2)+DARKSEND_FEE ||
-            nInputAmount == (DARKSEND_COLLATERAL * 1)+DARKSEND_FEE;
+    // MBK: Added support for block height darksend fee and collateral change
+    int64_t nDarkSendFee        = DARKSEND_FEE_V1;
+    int64_t nDarkSendCollateral = DARKSEND_COLLATERAL_V1;
+    if(nBestHeight >= DARKSEND_V2_START_BLOCK)
+    {
+        nDarkSendFee        = DARKSEND_FEE_V2;
+        nDarkSendCollateral = DARKSEND_COLLATERAL_V2;
+    }
+
+    return  nInputAmount == (nDarkSendCollateral/*DARKSEND_COLLATERAL*/ * 5)+nDarkSendFee/*DARKSEND_FEE*/ ||
+            nInputAmount == (nDarkSendCollateral/*DARKSEND_COLLATERAL*/ * 4)+nDarkSendFee/*DARKSEND_FEE*/ ||
+            nInputAmount == (nDarkSendCollateral/*DARKSEND_COLLATERAL*/ * 3)+nDarkSendFee/*DARKSEND_FEE*/ ||
+            nInputAmount == (nDarkSendCollateral/*DARKSEND_COLLATERAL*/ * 2)+nDarkSendFee/*DARKSEND_FEE*/ ||
+            nInputAmount == (nDarkSendCollateral/*DARKSEND_COLLATERAL*/ * 1)+nDarkSendFee/*DARKSEND_FEE*/;
 }
 
 bool CWallet::SelectCoinsWithoutDenomination(int64_t nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet) const
@@ -2354,10 +2363,17 @@ bool CWallet::CreateCollateralTransaction(CTransaction& txCollateral, std::strin
 
     BOOST_FOREACH(CTxIn v, vCoinsCollateral)
         txCollateral.vin.push_back(v);
+    
+    // MBK: Added support for block height darksend fee change  
+    int64_t nDarkSendCollateral = DARKSEND_COLLATERAL_V1;
+    if(nBestHeight >= DARKSEND_V2_START_BLOCK) 
+    {
+        nDarkSendCollateral = DARKSEND_COLLATERAL_V2;
+    }
 
-    if(nValueIn2 - DARKSEND_COLLATERAL - nFeeRet > 0) {
+    if(nValueIn2 - nDarkSendCollateral/*DARKSEND_COLLATERAL*/ - nFeeRet > 0) {
         //pay collateral charge in fees
-        CTxOut vout3 = CTxOut(nValueIn2 - DARKSEND_COLLATERAL, scriptChange);
+        CTxOut vout3 = CTxOut(nValueIn2 - nDarkSendCollateral/*DARKSEND_COLLATERAL*/, scriptChange);
         txCollateral.vout.push_back(vout3);
     }
 
@@ -2413,7 +2429,9 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64_t> >& vecSend, 
         // txdb must be opened before the mapWallet lock
         CTxDB txdb("r");
         {
-            nFeeRet = nTransactionFee;
+            // MBK: Support the tx fee increase at blockheight
+            nFeeRet = (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1); // nTransactionFee;
+            LogPrintf("CWallet::CreateTransaction() -> nFeeRet=%d\n", nFeeRet);
             while (true)
             {
                 wtxNew.vin.clear();
@@ -2498,7 +2516,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64_t> >& vecSend, 
                     };
 
                     wtxNew.vout.insert(position, CTxOut(nChange, scriptChange));
-		    nChangePos = std::distance(wtxNew.vout.begin(), position);
+		            nChangePos = std::distance(wtxNew.vout.begin(), position);
                 }
                 else
                     reservekey.ReturnKey();
@@ -2520,7 +2538,8 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64_t> >& vecSend, 
                 dPriority /= nBytes;
 
                 // Check that enough fee is included
-                int64_t nPayFee = nTransactionFee * (1 + (int64_t)nBytes / 1000);
+                // MBK: Support the tx fee increase at blockheight
+                int64_t nPayFee = (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1) /*nTransactionFee*/ * (1 + (int64_t)nBytes / 1000);
                 int64_t nMinFee = GetMinFee(wtxNew, 1, GMF_SEND, nBytes);
 
                 if (nFeeRet < max(nPayFee, nMinFee))
@@ -2974,7 +2993,9 @@ bool CWallet::SendStealthMoneyToDestination(CStealthAddress& sxAddress, int64_t 
         sError = "Invalid amount";
         return false;
     };
-    if (nValue + nTransactionFee + (1) > GetBalance())
+
+    // MBK: Support the tx fee increase at blockheight
+    if (nValue + (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1) /*nTransactionFee*/ + (1) > GetBalance())
     {
         sError = "Insufficient funds";
         return false;
@@ -3437,6 +3458,9 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
     if (nCredit == 0 || nCredit > nBalance - nReserveBalance)
         return false;
+    
+    // MBK: Added some additional debug information
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> [PreInputCollection] nCredit=%d", nCredit);
 
     BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
     {
@@ -3469,6 +3493,9 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         }
     }
 
+    // MBK: Added some additional debugging information
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> [AfterInputCollection] nCredit=%d", nCredit);
+
     // Calculate coin age reward
     int64_t nReward;
     {
@@ -3477,13 +3504,25 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         if (!txNew.GetCoinAge(txdb, nCoinAge))
             return error("CreateCoinStake : failed to calculate coin age");
 
-        nReward = GetProofOfStakeReward(nCoinAge, nFees, pindexBest->nHeight);
+        // MBK: Calculate the reward based on current wallet version
+        nReward = 0;
+        if(CURRENT_WALLET_VERSION == 2)
+        {
+            nReward = GetProofOfStakeReward(nCoinAge, nFees, pindexBest->nHeight);
+        }
+        else
+        {
+            nReward = GetProofOfStakeReward(nCoinAge, nFees, pindexBest->nHeight);
+        }
+        
         if (nReward <= 0)
             return false;
 
         nCredit += nReward;
     }
 
+    // MBK: Added some additional debugging information
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> nReward=%d, nCredit=%d", nReward, nCredit);
 
     // Masternode Payments
     int payments = 1;
@@ -3531,6 +3570,9 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
     int64_t blockValue = nCredit;
     int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, nReward);
+
+    // MBK: Added some additional debugging information
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> blockValue=%d, masternodePayment=%d", blockValue, masternodePayment);
 
     // Set output amount
     if (!hasPayment && txNew.vout.size() == 3) // 2 stake outputs, stake was split, no masternode payment
@@ -3677,7 +3719,8 @@ string CWallet::SendMoneyToDestination(const CTxDestination& address, int64_t nV
     // Check amount
     if (nValue <= 0)
         return _("Invalid amount");
-    if (nValue + nTransactionFee > GetBalance())
+    // MBK: Support the tx fee increase at blockheight
+    if (nValue + (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1) /*nTransactionFee*/ > GetBalance())
         return _("Insufficient funds");
 
     if (sNarr.length() > 24)
@@ -3710,8 +3753,9 @@ string CWallet::PrepareDarksendDenominate(int minRounds, int maxRounds)
         Select the coins we'll use
         if minRounds >= 0 it means only denominated inputs are going in and coming out
     */
+    // MBK: Added support for block height darksend fee change 
     if(minRounds >= 0){
-        if (!SelectCoinsByDenominations(darkSendPool.sessionDenom, 0.1*COIN, DARKSEND_POOL_MAX, vCoins, vCoins2, nValueIn, minRounds, maxRounds))
+        if (!SelectCoinsByDenominations(darkSendPool.sessionDenom, 0.1*COIN,(nBestHeight >= DARKSEND_V2_START_BLOCK ? DARKSEND_POOL_MAX_V2 : DARKSEND_POOL_MAX_V1)/*DARKSEND_POOL_MAX*/, vCoins, vCoins2, nValueIn, minRounds, maxRounds))
             return _("Insufficient funds");
     }
 

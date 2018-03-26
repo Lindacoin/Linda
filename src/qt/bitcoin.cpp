@@ -67,8 +67,18 @@ static bool ThreadSafeAskFee(int64_t nFeeRequired, const std::string& strCaption
 {
     if(!guiref)
         return false;
-    if(nFeeRequired < MIN_TX_FEE || nFeeRequired <= nTransactionFee || fDaemon)
-        return true;
+
+    // MBK: Determine the minimum tx fee based on current blockheight
+    int txMinimumFee = MIN_TX_FEE_V1;
+    if(nBestHeight >= TX_FEE_V2_INCREASE_BLOCK)
+    {
+        txMinimumFee = MIN_TX_FEE_V2;
+    }
+
+    //if(nFeeRequired < MIN_TX_FEE_V1 || nFeeRequired <= nTransactionFee || fDaemon)
+    if(nFeeRequired < txMinimumFee || nFeeRequired <= nTransactionFee || fDaemon)
+            return true;
+
     bool payFee = false;
 
     QMetaObject::invokeMethod(guiref, "askFee", GUIUtil::blockingGUIThreadConnection(),
