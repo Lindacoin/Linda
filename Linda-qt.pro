@@ -24,6 +24,7 @@ windows {
 	BOOST_LIB_SUFFIX= -mgw73-mt-s-1_58
 	BDB_LIB_PATH = $$DEPS_PATH/db-5.0.32.NC/build_unix
 	BDB_INCLUDE_PATH = $$DEPS_PATH/db-5.0.32.NC/build_unix
+#uncomment and modify below if you don't to want to use openssl static lib provided by mingw-w64 package
 	#OPENSSL_LIB_PATH = $$DEPS_PATH/
 	#OPENSSL_INCLUDE_PATH = $$DEPS_PATH/
 }
