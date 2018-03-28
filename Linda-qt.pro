@@ -13,22 +13,33 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
 }
 
-DEPS_PATH = /c/deps
 windows {
+	DEPS_PATH = /c/deps
 	SECP256K1_LIB_PATH = src/secp256k1/.libs
 	SECP256K1_INCLUDE_PATH = src/secp256k1/include
 	MINIUPNPC_LIB_PATH = $$DEPS_PATH/miniupnpc-1.9
 	MINIUPNPC_INCLUDE_PATH = $$DEPS_PATH/miniupnpc-1.9
 	BOOST_LIB_PATH = $$DEPS_PATH/boost_1_58_0/stage/lib
 	BOOST_INCLUDE_PATH = $$DEPS_PATH/boost_1_58_0
-	BDB_LIB_PATH = $$DEPS_PATH/db-4.8.30.NC/build_unix
-	BDB_INCLUDE_PATH = $$DEPS_PATH/db-4.8.30.NC/build_unix
+	BOOST_LIB_SUFFIX= -mgw73-mt-s-1_58
+	BDB_LIB_PATH = $$DEPS_PATH/db-5.0.32.NC/build_unix
+	BDB_INCLUDE_PATH = $$DEPS_PATH/db-5.0.32.NC/build_unix
 	#OPENSSL_LIB_PATH = $$DEPS_PATH/
 	#OPENSSL_INCLUDE_PATH = $$DEPS_PATH/
 }
 linux {
+	DEPS_PATH = $(HOME)/deps
 	SECP256K1_LIB_PATH = src/secp256k1/.libs
 	SECP256K1_INCLUDE_PATH = src/secp256k1/include
+## comment below dependencies if u don't need to compile a static binary on linux
+	MINIUPNPC_LIB_PATH = $$DEPS_PATH/miniupnpc-1.9
+	MINIUPNPC_INCLUDE_PATH = $$DEPS_PATH/miniupnpc-1.9
+	BOOST_LIB_PATH = $$DEPS_PATH/boost_1_58_0/stage/lib
+	BOOST_INCLUDE_PATH = $$DEPS_PATH/boost_1_58_0
+	BDB_LIB_PATH = $$DEPS_PATH/db-5.0.32.NC/build_unix
+	BDB_INCLUDE_PATH = $$DEPS_PATH/db-5.0.32.NC/build_unix
+	OPENSSL_LIB_PATH = $$DEPS_PATH/openssl-1.0.2g
+	OPENSSL_INCLUDE_PATH = $$DEPS_PATH/openssl-1.0.2g/include
 }
 
 
