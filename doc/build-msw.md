@@ -98,7 +98,7 @@ In Mingw32 Msys shell :
 	tar xvfz boost_1_58_0.tar.gz
 
 From DOS prompt configured for MingW :<br>
-(c:\msys64\win32\config64.bat must be executed before using c:\msys64\win32env.bat as DOS prompt)
+(c:\msys64\win32\config32.bat must be executed before using c:\msys64\win32env.bat as DOS prompt)
 
 	cd c:\deps\boost_1_58_0
 	bootstrap.bat mingw
@@ -163,7 +163,7 @@ then it's finally possible to compile Linda from Mingw32 Msys shell :
 
 NOTE : instructions for compiling 64bit windows wallet are the same except that :
 - Mingw64.exe will be launched as MSYS2 shell.
-- packages name that were beginning with "mingw-w64-i686-" for 32bit env, must be replaced by "mingw-w64-x86_64-" when using pacman
+- packages name that were beginning with "mingw-w64-i686-" for 32bit env, must be replaced by "mingw-w64-x86_64-" when using pacman to install 64bit libs
 - c:\msys64\win32\config64.bat must be executed before using c:\msys64\win32env.bat DOS prompt.
 - following path will be used before compiling Linda QT :
 
