@@ -967,7 +967,7 @@ bool CDarkSendPool::IsCollateralValid(const CTransaction& txCollateral){
     }
 
     //collateral transactions are required to pay out DARKSEND_COLLATERAL as a fee to the miners
-    // MBK: Added support for block height darksend fee change
+    // MBK: Added support for block height darksend collateral change
     if(nValueIn-nValueOut < (nBestHeight >= DARKSEND_V2_START_BLOCK ? DARKSEND_COLLATERAL_V2 : DARKSEND_COLLATERAL_V1)/*DARKSEND_COLLATERAL*/) {
         if(fDebug) LogPrintf ("CDarkSendPool::IsCollateralValid - did not include enough fees in transaction %d\n%s\n", nValueOut-nValueIn, txCollateral.ToString().c_str());
         return false;
@@ -2012,13 +2012,26 @@ bool CDarkSendSigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey){
 
     CTransaction txVin;
     uint256 hash;
+
+    // MBK: Added support for block height darksend collateral change
+    int64_t nDarkSendCollateral = DARKSEND_COLLATERAL_V1;
+    if(nBestHeight >= DARKSEND_V2_START_BLOCK)
+    {
+        nDarkSendCollateral = DARKSEND_COLLATERAL_V2;
+    }
+
     //if(GetTransaction(vin.prevout.hash, txVin, hash, true)){
-    if(GetTransaction(vin.prevout.hash, txVin, hash)){
-        BOOST_FOREACH(CTxOut out, txVin.vout){
-            if(out.nValue == 30000000*COIN){
+    if(GetTransaction(vin.prevout.hash, txVin, hash))
+    {
+        BOOST_FOREACH(CTxOut out, txVin.vout)
+        {
+            if(out.nValue == nDarkSendCollateral*COIN)
+            {
                 if(out.scriptPubKey == payee2) return true;
             }
+
         }
+
     }
 
     return false;

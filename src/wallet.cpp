@@ -2429,9 +2429,9 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64_t> >& vecSend, 
         // txdb must be opened before the mapWallet lock
         CTxDB txdb("r");
         {
-            // MBK: Support the tx fee increase at blockheight
-            nFeeRet = (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1); // nTransactionFee;
-            LogPrintf("CWallet::CreateTransaction() -> nFeeRet=%d\n", nFeeRet);
+            // MBK: Support the tx fee increase at blockheight 
+            //      NOTE: (Removed MIN_TX_FEE check, was forcing all tx fees to MIN_TX, small overthought)
+            nFeeRet = nTransactionFee;
             while (true)
             {
                 wtxNew.vin.clear();
@@ -2539,8 +2539,11 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64_t> >& vecSend, 
 
                 // Check that enough fee is included
                 // MBK: Support the tx fee increase at blockheight
-                int64_t nPayFee = (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1) /*nTransactionFee*/ * (1 + (int64_t)nBytes / 1000);
+                //      NOTE: (Removed MIN_TX_FEE check, was forcing all tx fees to MIN_TX, small overthought)
+                int64_t nPayFee = /*(nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1)*/ nTransactionFee * (1 + (int64_t)nBytes / 1000);
                 int64_t nMinFee = GetMinFee(wtxNew, 1, GMF_SEND, nBytes);
+
+                LogPrintf("CWallet::CreateTransaction() -> nPayFee=%d  nMinFee=%d", nPayFee, nMinFee);
 
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
@@ -2995,7 +2998,8 @@ bool CWallet::SendStealthMoneyToDestination(CStealthAddress& sxAddress, int64_t 
     };
 
     // MBK: Support the tx fee increase at blockheight
-    if (nValue + (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1) /*nTransactionFee*/ + (1) > GetBalance())
+    //      NOTE: (Removed MIN_TX_FEE check, was forcing all tx fees to MIN_TX, small overthought)
+    if (nValue + /*(nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1)*/ nTransactionFee + (1) > GetBalance())
     {
         sError = "Insufficient funds";
         return false;
@@ -3720,7 +3724,8 @@ string CWallet::SendMoneyToDestination(const CTxDestination& address, int64_t nV
     if (nValue <= 0)
         return _("Invalid amount");
     // MBK: Support the tx fee increase at blockheight
-    if (nValue + (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1) /*nTransactionFee*/ > GetBalance())
+    //      NOTE: (Removed MIN_TX_FEE check, was forcing all tx fees to MIN_TX, small overthought)
+    if (nValue + /*(nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1)*/ nTransactionFee > GetBalance())
         return _("Insufficient funds");
 
     if (sNarr.length() > 24)
