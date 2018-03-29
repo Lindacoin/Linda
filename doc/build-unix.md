@@ -173,7 +173,7 @@ sudo apt-get install git
 ```
 Install Linux development tools 
 ```
-sudo apt-get install build-essential
+sudo apt-get install build-essential libtool automake autotools-dev autoconf pkg-config libgmp3-dev libevent-dev bsdmainutils
 ```
 ## Compile all dependencies manually and use their static libs
 ### Download and build BerkeleyDB 5.0.32.NC
