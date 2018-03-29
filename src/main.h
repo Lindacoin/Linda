@@ -20,13 +20,44 @@ class CValidationState;
 #define START_MASTERNODE_PAYMENTS_TESTNET 1429738064
 #define START_MASTERNODE_PAYMENTS 1429738064
 
-static const int64_t DARKSEND_COLLATERAL = (30000000*COIN);
-static const int64_t DARKSEND_FEE = (0.0001*COIN);
-static const int64_t DARKSEND_POOL_MAX = (1111.99*COIN);
-static const int REWARD_START = 51;
-static const int REWARD_HALVE = 790115;
-static const int PREMINE_BLOCK = 10;
+// MBK: Global wallet version. (Switch to V2 changes where appropriate)
+static const int CURRENT_WALLET_VERSION = 2;
+
+static const int64_t DARKSEND_COLLATERAL_V1 = (30000000*COIN);
+static const int64_t DARKSEND_FEE_V1        = (0.0001*COIN);
+static const int64_t DARKSEND_POOL_MAX_V1   = (1111.99*COIN);
+
+static const int REWARD_START      = 51;
+static const int REWARD_HALVE      = 790115;
+static const int PREMINE_BLOCK     = 10;
 static const int FAIR_LAUNCH_BLOCK = 50;
+
+// MBK: Added globals to simplify future potential changes
+static const int64_t MASTERNODE_COLLATERAL_V1 = (30000000*COIN);
+static const int64_t MASTERNODE_COLLATERAL_V2 = (2000000*COIN);
+static const int64_t COIN_YEAR_REWARD_V2      = (99*CENT);
+static const int64_t MIN_TX_FEE_V2            = 100000; 
+static const int64_t MIN_RELAY_TX_FEE_V2      = MIN_TX_FEE_V2;
+static const int64_t DARKSEND_COLLATERAL_V2   = (2000000*COIN);
+static const int64_t DARKSEND_FEE_V2          = (0.0001*COIN);
+static const int64_t DARKSEND_POOL_MAX_V2     = (1111.99*COIN);
+// MBK: Following are block heights to begin V2 swap
+static const int POS_REWARD_V2_START_BLOCK    = 359930;//371180;  // ~03312018 (March 31, 2018)
+static const int POW_REWARD_V2_START_BLOCK    = 378230;  // ~04052018 (April 5, 2018)
+static const int TX_FEE_V2_INCREASE_BLOCK     = 378230;  // ~04052018 (April 5, 2018)
+static const int MASTERNODE_V2_START_BLOCK    = 378230;  // ~04052018 (April 5, 2018)
+static const int MASTERNODE_V2_FULLSWAP_BLOCK = 540380;  // ~08012018 (August 1, 2018)
+static const int DARKSEND_V2_START_BLOCK      = 359930;  //371180;  // ~03312018 (March 31, 2018)
+static const int MASTERNODE_V2_STOP_BLOCK     = 1575000; // ~07012020 (July 1, 2020)
+static const int V2_EMISSION_CAP_START_BLOCK  = 1575000; // ~07012020 (July 1, 2020)
+// MBK: Following define PoW/PoS reward parameters
+static const int POW_REWARD_V1_FULL         = 14150;
+static const int POW_REWARD_V2_FULL         = 13726; // ~3% reduction from V1 block reward
+static const int POW_REWARD_V1_HALF         = POW_REWARD_V1_FULL/2;
+static const int POW_REWARD_V2_HALF         = POW_REWARD_V2_FULL/2;
+static const double POS_REWARD_V2_BURN_RATE = 0.02f; // ~2% reduction from V1 stake reward
+
+static const int MBK_EXTRA_DEBUG = 1;
 
 /*
     At 15 signatures, 1/2 of the masternode network can be owned by
@@ -81,9 +112,9 @@ static const unsigned int DEFAULT_MAX_ORPHAN_BLOCKS = 750;
 /** The maximum number of entries in an 'inv' protocol message */
 static const unsigned int MAX_INV_SZ = 50000;
 /** Fees smaller than this (in satoshi) are considered zero fee (for transaction creation) */
-static const int64_t MIN_TX_FEE = 10000;
+static const int64_t MIN_TX_FEE_V1 = 10000; 
 /** Fees smaller than this (in satoshi) are considered zero fee (for relaying) */
-static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
+static const int64_t MIN_RELAY_TX_FEE_V1 = MIN_TX_FEE_V1;
 /** No amount larger than this (in satoshi) is valid */
 static const int64_t MAX_MONEY = 50000000000 * COIN; // 50B coins
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
@@ -178,6 +209,10 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits);
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake);
 int64_t GetProofOfWorkReward(int64_t nFees, unsigned int nHeight);
 int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, unsigned int nHeight);
+// MBK: V2 Wallet
+int64_t GetProofOfWorkRewardV2(int64_t nFees, unsigned int nHeight);
+int64_t GetProofOfStakeRewardV2(int64_t nCoinAge, int64_t nFees, unsigned int nHeight);
+
 unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime);
 unsigned int ComputeMinStake(unsigned int nBase, int64_t nTime, unsigned int nBlockTime);
 bool IsInitialBlockDownload();

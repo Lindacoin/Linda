@@ -4,11 +4,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "init.h"
-<<<<<<< HEAD
-// Update: This method of peer location is no longer supported
-//#include "irc.h"
-=======
->>>>>>> upstream/master
 #include "chainparams.h"
 #include "db.h"
 #include "net.h"
@@ -487,7 +482,8 @@ bool CNode::Misbehaving(int howmuch)
 {
     if (addr.IsLocal())
     {
-        LogPrintf("Warning: Local node %s misbehaving (delta: %d)!\n", addrName, howmuch);
+        // MBK: Added some additional debugging information
+        LogPrintf("CNode::Misbehaving() -> Warning: Local node %s misbehaving (delta: %d)!\n", addrName, howmuch);
         return false;
     }
 
@@ -495,7 +491,7 @@ bool CNode::Misbehaving(int howmuch)
     if (nMisbehavior >= GetArg("-banscore", 100))
     {
         int64_t banTime = GetTime()+GetArg("-bantime", 60*60*24);  // Default 24-hour ban
-        LogPrintf("Misbehaving: %s (%d -> %d) DISCONNECTING\n", addr.ToString(), nMisbehavior-howmuch, nMisbehavior);
+        LogPrintf("CNode::Misbehaving() -> Misbehaving: %s howmuch=%d (%d -> %d) DISCONNECTING\n", addr.ToString(), howmuch, nMisbehavior-howmuch, nMisbehavior);
         {
             LOCK(cs_setBanned);
             if (setBanned[addr] < banTime)
@@ -504,7 +500,7 @@ bool CNode::Misbehaving(int howmuch)
         CloseSocketDisconnect();
         return true;
     } else
-        LogPrintf("Misbehaving: %s (%d -> %d)\n", addr.ToString(), nMisbehavior-howmuch, nMisbehavior);
+        LogPrintf("CNode::Misbehaving() -> Misbehaving: %s howmuch=%d (%d -> %d)\n", addr.ToString(), howmuch, nMisbehavior-howmuch, nMisbehavior);
     return false;
 }
 
@@ -919,7 +915,13 @@ void ThreadSocketHandler()
                             if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS)
                             {
                                 if (!pnode->fDisconnect)
-                                    LogPrintf("socket recv error %d\n", nErr);
+                                {
+                                    // MBK: Added some additional debugging information
+                                    if (MBK_EXTRA_DEBUG) LogPrintf("ThreadSocketHandler() -> Socket recv error %d from %s\n", nErr, pnode->addr.ToString());
+                
+                                    LogPrint("net", "socket recv error %d\n", nErr);
+                                }
+
                                 pnode->CloseSocketDisconnect();
                             }
                         }
@@ -1676,8 +1678,6 @@ void StartNode(boost::thread_group& threadGroup)
     MapPort(GetBoolArg("-upnp", USE_UPNP));
 #endif
 
-=======
->>>>>>> upstream/master
     // Send and receive from sockets, accept connections
     threadGroup.create_thread(boost::bind(&TraceThread<void (*)()>, "net", &ThreadSocketHandler));
 

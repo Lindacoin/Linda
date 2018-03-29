@@ -595,8 +595,21 @@ bool CTransaction::CheckTransaction() const
 
 int64_t GetMinFee(const CTransaction& tx, unsigned int nBlockSize, enum GetMinFee_mode mode, unsigned int nBytes)
 {
+
+    // MBK: Determine the minimum tx fee based on current blockheight
+    int txMinimumFee = MIN_TX_FEE_V1;
+    int txMinimumRelayFee = MIN_RELAY_TX_FEE_V1;
+    // MBK: Support the tx fee increase at blockheight
+    if(nBestHeight >= TX_FEE_V2_INCREASE_BLOCK)
+    {
+        txMinimumFee = MIN_TX_FEE_V2;
+        txMinimumRelayFee = MIN_RELAY_TX_FEE_V2;
+    }
+
     // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
-    int64_t nBaseFee = (mode == GMF_RELAY) ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
+    // MBK: Support the tx fee increase at blockheight
+    //int64_t nBaseFee = (mode == GMF_RELAY) ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
+    int64_t nBaseFee = (mode == GMF_RELAY) ? txMinimumRelayFee : txMinimumFee;
 
     unsigned int nNewBlockSize = nBlockSize + nBytes;
     int64_t nMinFee = (1 + (int64_t)nBytes / 1000) * nBaseFee;
@@ -697,8 +710,9 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
         unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
         // Don't accept it if it can't get into a block
+        // MBK: Support the tx fee increase at blockheight
         int64_t txMinFee = GetMinFee(tx, 1000, GMF_RELAY, nSize);
-        if ((fLimitFree && nFees < txMinFee) || (!fLimitFree && nFees < MIN_TX_FEE))
+        if ((fLimitFree && nFees < txMinFee) || (!fLimitFree && nFees < (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1)))
             return error("AcceptToMemoryPool : not enough fees %s, %d < %d",
                          hash.ToString(),
                          nFees, txMinFee);
@@ -706,7 +720,8 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
         // Continuously rate-limit free transactions
         // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
         // be annoying or make others' transactions take longer to confirm.
-        if (fLimitFree && nFees < MIN_RELAY_TX_FEE)
+        // MBK: Support the tx fee increase at blockheight
+        if (fLimitFree && nFees < (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_RELAY_TX_FEE_V2 : MIN_RELAY_TX_FEE_V1))
         {
             static CCriticalSection csFreeLimiter;
             static double dFreeCount;
@@ -845,8 +860,9 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
         unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
         // Don't accept it if it can't get into a block
+        // MBK: Support the tx fee increase at blockheight
         int64_t txMinFee = GetMinFee(tx, 1000, GMF_RELAY, nSize);
-        if ((fLimitFree && nFees < txMinFee) || (!fLimitFree && nFees < MIN_TX_FEE))
+        if ((fLimitFree && nFees < txMinFee) || (!fLimitFree && nFees < (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1)))
             return error("AcceptableInputs : not enough fees %s, %d < %d",
                          hash.ToString(),
                          nFees, txMinFee);
@@ -854,7 +870,8 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
         // Continuously rate-limit free transactions
         // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
         // be annoying or make others' transactions take longer to confirm.
-        if (fLimitFree && nFees < MIN_RELAY_TX_FEE)
+        // MBK: Support the tx fee increase at blockheight
+        if (fLimitFree && nFees < (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_RELAY_TX_FEE_V2 : MIN_RELAY_TX_FEE_V1))
         {
             static CCriticalSection csFreeLimiter;
             static double dFreeCount;
@@ -1135,7 +1152,7 @@ static CBigNum GetProofOfStakeLimit(int nHeight)
 int64_t GetProofOfWorkReward(int64_t nFees, unsigned int nHeight)
 {
     int64_t nSubsidy = 0;
-        
+
     if(pindexBest->nHeight < PREMINE_BLOCK)
     {
         nSubsidy = 500000000 * COIN; //  PREMINE 10 BLOCKS
@@ -1154,6 +1171,43 @@ int64_t GetProofOfWorkReward(int64_t nFees, unsigned int nHeight)
     }
 
     LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(nSubsidy), nSubsidy);
+    // MBK: Added some additional debugging information
+    if (MBK_EXTRA_DEBUG) LogPrintf("creation -> GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(nSubsidy), nSubsidy);
+
+    return nSubsidy + nFees;
+}
+
+// miner's coin base reward
+// MBK: Update PoW reward structure to reflect reduction to help combat inflation
+int64_t GetProofOfWorkRewardV2(int64_t nFees, unsigned int nHeight)
+{
+    int64_t nSubsidy = 0;
+
+    if(pindexBest->nHeight < POW_REWARD_V2_START_BLOCK)
+    {
+        // MBK: PoW reward change starts after wallet release so until then return current V1 reward
+        nSubsidy = POW_REWARD_V1_FULL * COIN;
+    }
+    else if(pindexBest->nHeight >= POW_REWARD_V2_START_BLOCK)
+    {
+        // MBK: Have reached blockheight to begin reward PoW reward burn
+        nSubsidy = POW_REWARD_V2_FULL * COIN;
+    }
+    else if(pindexBest->nHeight >= REWARD_HALVE)
+    {
+        // MBK: Have reached the blockheight to half PoW reward on blocks
+        nSubsidy = POW_REWARD_V2_HALF * COIN;
+    }
+    else if(pindexBest->nHeight > V2_EMISSION_CAP_START_BLOCK)
+    {
+        // MBK: Have reached the blockheight where rewards are finished
+        nSubsidy = 0;
+    }
+
+    LogPrint("creation", "GetProofOfWorkRewardV2() : create=%d(%s)\n", nSubsidy, FormatMoney(nSubsidy));
+    // MBK: Added some additional debugging information
+    double percent = ((double)nSubsidy / (double)(POW_REWARD_V1_FULL*COIN)) * (double)100.0f;
+    if (MBK_EXTRA_DEBUG) LogPrintf("creation -> GetProofOfWorkRewardV2() : create=%d(%s)[%d] nSubsidy=%d\n", nSubsidy, FormatMoney(nSubsidy), percent, nSubsidy);
 
     return nSubsidy + nFees;
 }
@@ -1161,13 +1215,50 @@ int64_t GetProofOfWorkReward(int64_t nFees, unsigned int nHeight)
 // miner's coin stake reward based on coin age spent (coin-days)
 int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, unsigned int nHeight)
 {
-    int64_t nSubsidy;
-
+    int64_t nSubsidy = 0;
 
     nSubsidy = nCoinAge * COIN_YEAR_REWARD * 33 / (365 * 33 + 8);
 
-
     LogPrint("creation", "GetProofOfStakeReward(): create=%s nCoinAge=%d\n", FormatMoney(nSubsidy), nCoinAge);
+    // MBK: Added some additional debugging information
+    if (MBK_EXTRA_DEBUG) LogPrintf("creation -> GetProofOfStakeReward(): create=%s nCoinAge=%d\n", FormatMoney(nSubsidy), nCoinAge);
+
+    return nSubsidy + nFees;
+}
+
+// miner's coin stake reward based on coin age spent (coin-days)
+// MBK: Update PoS reward structure to reflect reduction to help combat inflation 
+int64_t GetProofOfStakeRewardV2(int64_t nCoinAge, int64_t nFees, unsigned int nHeight)
+{
+    int64_t nSubsidy = 0;
+    int64_t nBlockReward = 0;
+
+    nBlockReward = nCoinAge * COIN_YEAR_REWARD_V2 * 33 / (365 * 33 + 8);
+    // MBK: Burn % of the stake reward to help curb inflation if V2 wallet
+    if(nHeight >= POS_REWARD_V2_START_BLOCK /*|| CURRENT_WALLET_VERSION == 2*/)
+    {
+        if(nHeight >= V2_EMISSION_CAP_START_BLOCK)
+        {
+            // MBK: Have reached the blockheight when rewards are finished
+            nSubsidy = 0;
+        }
+        else
+        {
+            // MBK: Have reached the blockheight to start the % burn on PoS rewards to help curb inflation 
+            nSubsidy = nBlockReward - (nBlockReward * POS_REWARD_V2_BURN_RATE);
+        }
+    }
+    else
+    {
+        // MBK: Have not reached the blockheight to start the PoS reward burn
+        nSubsidy = nBlockReward;
+    }
+
+    LogPrint("creation", "GetProofOfStakeRewardV2(): create=%s nCoinAge=%d\n", FormatMoney(nSubsidy), nCoinAge);
+    // MBK: Added some additional debugging information
+    double percent = ((double)nSubsidy / (double)nBlockReward) * (double)100.0f;
+    //if (MBK_EXTRA_DEBUG) LogPrintf("creation -> GetProofOfStakeRewardV2(): nSubsidy=%d preburn=%d(%f)\n", nSubsidy, nBlockReward, percent);
+    if (MBK_EXTRA_DEBUG) LogPrintf("creation -> GetProofOfStakeRewardV2(): create=%d(%s)[%d] nCoinAge=%d preburn=%d(%s)\n",nSubsidy, FormatMoney(nSubsidy), percent, nCoinAge, nBlockReward, FormatMoney(nBlockReward));
 
     return nSubsidy + nFees;
 }
@@ -1224,8 +1315,8 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
 
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
-   // if(pindexLast->GetBlockTime() > STAKE_TIMESPAN_SWITCH_TIME)
-    //nTargetTimespan = 2 * 60; // 2 minutes
+    //if(pindexLast->GetBlockTime() > STAKE_TIMESPAN_SWITCH_TIME)
+    //    nTargetTimespan = 2 * 60; // 2 minutes
 
     CBigNum bnTargetLimit = fProofOfStake ? GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit();
 
@@ -1307,11 +1398,12 @@ void Misbehaving(NodeId pnode, int howmuch)
             int banscore = GetArg("-banscore", 100);
             if (pn->nMisbehavior >= banscore && pn->nMisbehavior - howmuch < banscore)
             {
-                LogPrintf("Misbehaving: %s (%d -> %d) BAN THRESHOLD EXCEEDED\n", pn->addrName, pn->nMisbehavior-howmuch, pn->nMisbehavior);
+                // MBK: Added some additional debugging information
+                LogPrintf("Misbehaving() -> Misbehaving: %s howmuch=%d (%d -> %d) BAN THRESHOLD EXCEEDED\n", pn->addrName, howmuch, pn->nMisbehavior-howmuch, pn->nMisbehavior);
                 //pn->fShouldBan = true;
             } 
             else
-                LogPrintf("Misbehaving: %s (%d -> %d)\n", pn->addrName, pn->nMisbehavior-howmuch, pn->nMisbehavior);
+                LogPrintf("Misbehaving() -> Misbehaving: %s howmuch=%d (%d -> %d)\n", pn->addrName, howmuch, pn->nMisbehavior-howmuch, pn->nMisbehavior);
 
             break;
         }
@@ -1763,7 +1855,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     BOOST_FOREACH(CTransaction& tx, vtx)
     {
         uint256 hashTx = tx.GetHash();
-	nInputs += tx.vin.size();
+	    nInputs += tx.vin.size();
 
         // Do not allow blocks that contain transactions which 'overwrite' older transactions,
         // unless those are already completely spent.
@@ -1816,7 +1908,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                 nFees += nTxValueIn - nTxValueOut;
             if (tx.IsCoinStake())
                 nStakeReward = nTxValueOut - nTxValueIn;
-
+            
 	    //if(setValidatedTx.find(hashTx) == setValidatedTx.end())
 	    //{
                 if (!tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, flags))
@@ -1842,13 +1934,35 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
 
     if (IsProofOfWork())
     {
-        int64_t nReward = GetProofOfWorkReward(nFees,pindex->nHeight);
+        // MBK: Calculate the reward based on the wallet version
+        int64_t nReward = 0;
+        if(CURRENT_WALLET_VERSION == 2)
+        {
+            nReward = GetProofOfWorkRewardV2(nFees,pindex->nHeight);
+        }
+        else
+        {
+            nReward = GetProofOfWorkReward(nFees,pindex->nHeight);
+        }
+
         // Check coinbase reward
         if (vtx[0].GetValueOut() > nReward)
             return DoS(50, error("ConnectBlock() : coinbase reward exceeded (actual=%d vs calculated=%d)",
                    vtx[0].GetValueOut(),
                    nReward));
     }
+
+    // MBK: Calculate the stake reward burn
+    if(CURRENT_WALLET_VERSION == 2)
+    {
+        // MBK: Start the PoS reward burn to help offset future inflation to cap
+        if(pindex->nHeight >= POS_REWARD_V2_START_BLOCK /*|| CURRENT_WALLET_VERSION == 2*/)
+        {
+            nStakeReward = nStakeReward - (nStakeReward * POS_REWARD_V2_BURN_RATE);
+        }
+
+    }
+
     if (IsProofOfStake())
     {
         // ppcoin: coin stake tx earns reward instead of paying fee
@@ -1856,10 +1970,22 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         if (!vtx[1].GetCoinAge(txdb, nCoinAge))
             return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString());
 
-        int64_t nCalculatedStakeReward = GetProofOfStakeReward(nCoinAge, nFees, pindex->nHeight);
+        // MBK: Calculate the stake reward based on current wallet version
+        int64_t nCalculatedStakeReward = 0;
+        if(CURRENT_WALLET_VERSION == 2)
+        {
+            nCalculatedStakeReward = GetProofOfStakeRewardV2(nCoinAge, nFees, pindex->nHeight);
+        }
+        else
+        {
+            nCalculatedStakeReward = GetProofOfStakeReward(nCoinAge, nFees, pindex->nHeight);
+        }
 
         if (nStakeReward > nCalculatedStakeReward)
             return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
+
+        // MBK: Added some additional debugging information
+        if (MBK_EXTRA_DEBUG) LogPrintf("ConnectBlock() -> nStakeReward=%d(%s) nCalculatedStakeReward=%d(%s)\n", nStakeReward, FormatMoney(nStakeReward), nCalculatedStakeReward, FormatMoney(nCalculatedStakeReward));
     }
 
     // ppcoin: track money supply and mint amount info
@@ -2221,12 +2347,14 @@ bool CTransaction::GetCoinAge(CTxDB& txdb, uint64_t& nCoinAge) const
 
         int64_t nValueIn = txPrev.vout[txin.prevout.n].nValue;
         bnCentSecond += CBigNum(nValueIn) * (nTime-txPrev.nTime) / CENT;
-
+        
         LogPrint("coinage", "coin age nValueIn=%d nTimeDiff=%d bnCentSecond=%s\n", nValueIn, nTime - txPrev.nTime, bnCentSecond.ToString());
+        LogPrintf("CTransaction::GetCoinAge() -> coin age nValueIn=%d(%s) nTimeDiff=%d bnCentSecond=%s\n", nValueIn, FormatMoney(nValueIn), nTime - txPrev.nTime, bnCentSecond.ToString());
     }
 
     CBigNum bnCoinDay = bnCentSecond * CENT / COIN / (24 * 60 * 60);
     LogPrint("coinage", "coin age bnCoinDay=%s\n", bnCoinDay.ToString());
+    LogPrintf("CTransaction::GetCoinAge() -> coin age bnCoinDay=%s\n", bnCoinDay.ToString());
     nCoinAge = bnCoinDay.getuint64();
     return true;
 }
@@ -4300,7 +4428,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 {
-    int64_t ret = static_cast<int64_t>(0); //100% masternode
-
+    // MBK: Set masternode reward phase
+    int64_t ret = static_cast<int64_t>(67.33333333333333333); // ~2/3 masternode stake reward
     return ret;
 }
