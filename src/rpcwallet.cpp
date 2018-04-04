@@ -861,7 +861,7 @@ Value ListReceived(const Array& params, bool fByAccounts)
         const CBitcoinAddress& address = item.first;
         const string& strAccount = item.second;
         map<CBitcoinAddress, tallyitem>::iterator it = mapTally.find(address);
-        if (it == mapTally.end() && !fIncludeEmpty)
+        if ((it == mapTally.end() && !fIncludeEmpty) || !IsMine(*pwalletMain, address.Get()))
             continue;
 
         int64_t nAmount = 0;
