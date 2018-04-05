@@ -113,6 +113,9 @@ Value getnewaddress(const Array& params, bool fHelp)
             "If [account] is specified, it is added to the address book "
             "so payments received with the address will be credited to [account].");
 
+    CWalletDB walletdb(pwalletMain->strWalletFile);
+    CAccount account = CAccount();
+
     // Parse the account first so we don't generate a key if there's an error
     string strAccount;
     if (params.size() > 0)
@@ -122,14 +125,13 @@ Value getnewaddress(const Array& params, bool fHelp)
         pwalletMain->TopUpKeyPool();
 
     // Generate a new key that is added to wallet
-    CPubKey newKey;
-    if (!pwalletMain->GetKeyFromPool(newKey))
-        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
-    CKeyID keyID = newKey.GetID();
+    if (!pwalletMain->GetKeyFromPool(account.vchPubKey))
+            throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
 
-    pwalletMain->SetAddressBookName(keyID, strAccount);
+    pwalletMain->SetAddressBookName(account.vchPubKey.GetID(), strAccount);
+    walletdb.WriteAccount(strAccount, account);
 
-    return CBitcoinAddress(keyID).ToString();
+    return CBitcoinAddress(account.vchPubKey.GetID()).ToString();
 }
 
 
@@ -206,13 +208,9 @@ Value setaccount(const Array& params, bool fHelp)
     if (params.size() > 1)
         strAccount = AccountFromValue(params[1]);
 
-    // Detect when changing the account of an address that is the 'unused current key' of another account:
-    if (pwalletMain->mapAddressBook.count(address.Get()))
-    {
-        string strOldAccount = pwalletMain->mapAddressBook[address.Get()];
-        if (address == GetAccountAddress(strOldAccount))
-            GetAccountAddress(strOldAccount, true);
-    }
+    // Check if the address is in your wallet
+    if (!pwalletMain->mapAddressBook.count(address.Get()))
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Linda address");
 
     pwalletMain->SetAddressBookName(address.Get(), strAccount);
 
