@@ -3464,7 +3464,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         return false;
     
     // MBK: Added some additional debug information
-    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> [PreInputCollection] nCredit=%d", nCredit);
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> [PreInputCollection] nCredit=%d\n", nCredit);
 
     BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
     {
@@ -3498,7 +3498,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     }
 
     // MBK: Added some additional debugging information
-    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> [AfterInputCollection] nCredit=%d", nCredit);
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> [AfterInputCollection] nCredit=%d\n", nCredit);
 
     // Calculate coin age reward
     int64_t nReward;
@@ -3526,7 +3526,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     }
 
     // MBK: Added some additional debugging information
-    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> nReward=%d, nCredit=%d", nReward, nCredit);
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> nReward=%d, nCredit=%d\n", nReward, nCredit);
 
     // Masternode Payments
     int payments = 1;
@@ -3576,7 +3576,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, nReward);
 
     // MBK: Added some additional debugging information
-    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> blockValue=%d, masternodePayment=%d", blockValue, masternodePayment);
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> blockValue=%d(%s), masternodePayment=%d(%s)\n", blockValue, FormatMoney(blockValue), masternodePayment, FormatMoney(masternodePayment));
 
     // Set output amount
     if (!hasPayment && txNew.vout.size() == 3) // 2 stake outputs, stake was split, no masternode payment

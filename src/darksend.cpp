@@ -2025,7 +2025,14 @@ bool CDarkSendSigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey){
     {
         BOOST_FOREACH(CTxOut out, txVin.vout)
         {
-            if(out.nValue == nDarkSendCollateral*COIN)
+            // MBK: Added some additional degugging information
+            if(MBK_EXTRA_DEBUG)
+            {
+                LogPrintf("CDarkSendSigner::IsVinAssociatedWithPubkey() -> nValue=%d(%s) nDarkSendCollateral=%d(%s) extra=%d\n", out.nValue, FormatMoney(out.nValue), nDarkSendCollateral, FormatMoney(nDarkSendCollateral), nDarkSendCollateral*COIN);            
+            }
+
+            // MBK: Corrected calculation. *COIN is done in main.h and should have been removed
+            if(out.nValue == nDarkSendCollateral/**COIN*/)
             {
                 if(out.scriptPubKey == payee2) return true;
             }

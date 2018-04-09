@@ -345,7 +345,7 @@ Value masternode(const Array& params, bool fHelp)
         if(activeMasternode.status == MASTERNODE_INPUT_TOO_NEW) return "masternode input must have at least 15 confirmations";
         if(activeMasternode.status == MASTERNODE_STOPPED) return "masternode is stopped";
         if(activeMasternode.status == MASTERNODE_IS_CAPABLE) return "successfully started masternode";
-        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode: " + activeMasternode.notCapableReason;
+        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode(cmd=start): " + activeMasternode.notCapableReason;
         if(activeMasternode.status == MASTERNODE_SYNC_IN_PROCESS) return "sync in process. Must wait until client is synced to start.";
 
         return "unknown";
@@ -467,7 +467,7 @@ Value masternode(const Array& params, bool fHelp)
         if(activeMasternode.status == MASTERNODE_INPUT_TOO_NEW) return "masternode input must have at least 15 confirmations";
         if(activeMasternode.status == MASTERNODE_IS_CAPABLE) return "successfully started masternode";
         if(activeMasternode.status == MASTERNODE_STOPPED) return "masternode is stopped";
-        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode: " + activeMasternode.notCapableReason;
+        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode(cmd=debug): " + activeMasternode.notCapableReason;
         if(activeMasternode.status == MASTERNODE_SYNC_IN_PROCESS) return "sync in process. Must wait until client is synced to start.";
 
         CTxIn vin = CTxIn();
