@@ -21,7 +21,8 @@ void CActiveMasternode::ManageStatus()
 
     //need correct adjusted time to send ping
     bool fIsInitialDownload = IsInitialBlockDownload();
-    if(fIsInitialDownload) {
+    if(fIsInitialDownload) 
+    {
         status = MASTERNODE_SYNC_IN_PROCESS;
         LogPrintf("CActiveMasternode::ManageStatus() - Sync in progress. Must wait until sync is complete to start masternode.\n");
         return;
@@ -31,15 +32,21 @@ void CActiveMasternode::ManageStatus()
         status = MASTERNODE_NOT_PROCESSED;
     }
 
-    if(status == MASTERNODE_NOT_PROCESSED) {
-        if(strMasterNodeAddr.empty()) {
-            if(!GetLocal(service)) {
+    if(status == MASTERNODE_NOT_PROCESSED) 
+    {
+        if(strMasterNodeAddr.empty()) 
+        {
+            if(!GetLocal(service)) 
+            {
                 notCapableReason = "Can't detect external address. Please use the masternodeaddr configuration option.";
                 status = MASTERNODE_NOT_CAPABLE;
                 LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason.c_str());
                 return;
             }
-        } else {
+
+        } 
+        else 
+        {
         	service = CService(strMasterNodeAddr);
         }
 
@@ -55,7 +62,8 @@ void CActiveMasternode::ManageStatus()
         */
 
         
-            if(!ConnectNode((CAddress)service, service.ToString().c_str())){
+            if(!ConnectNode((CAddress)service, service.ToString().c_str()))
+            {
                 notCapableReason = "Could not connect to " + service.ToString();
                 status = MASTERNODE_NOT_CAPABLE;
                 LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason.c_str());
@@ -63,7 +71,8 @@ void CActiveMasternode::ManageStatus()
             }
         
 
-        if(pwalletMain->IsLocked()){
+        if(pwalletMain->IsLocked())
+        {
             notCapableReason = "Wallet is locked.";
             status = MASTERNODE_NOT_CAPABLE;
             LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason.c_str());
@@ -78,9 +87,11 @@ void CActiveMasternode::ManageStatus()
         CPubKey pubKeyCollateralAddress;
         CKey keyCollateralAddress;
 
-        if(GetMasterNodeVin(vin, pubKeyCollateralAddress, keyCollateralAddress)) {
+        if(GetMasterNodeVin(vin, pubKeyCollateralAddress, keyCollateralAddress)) 
+        {
 
-            if(GetInputAge(vin) < MASTERNODE_MIN_CONFIRMATIONS){
+            if(GetInputAge(vin) < MASTERNODE_MIN_CONFIRMATIONS)
+            {
                 LogPrintf("CActiveMasternode::ManageStatus() - Input must have least %d confirmations - %d confirmations\n", MASTERNODE_MIN_CONFIRMATIONS, GetInputAge(vin));
                 status = MASTERNODE_INPUT_TOO_NEW;
                 return;
@@ -103,20 +114,26 @@ void CActiveMasternode::ManageStatus()
             	return;
             }
 
-            if(!Register(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage)) {
+            if(!Register(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage)) 
+            {
             	LogPrintf("CActiveMasternode::ManageStatus() - Error on Register: %s\n", errorMessage.c_str());
             }
 
             return;
-        } else {
+        } 
+        else 
+        {
         	LogPrintf("CActiveMasternode::ManageStatus() - Could not find suitable coins!\n");
         }
+
     }
 
     //send to all peers
-    if(!Dseep(errorMessage)) {
+    if(!Dseep(errorMessage)) 
+    {
     	LogPrintf("CActiveMasternode::ManageStatus() - Error on Ping: %s", errorMessage.c_str());
     }
+    
 }
 
 // Send stop dseep to network for remote masternode
