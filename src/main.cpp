@@ -4429,6 +4429,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 {
     // MBK: Set masternode reward phase
-    int64_t ret = static_cast<int64_t>(67.33333333333333333); // ~2/3 masternode stake reward
+    //      NOTE: Fixed the reward, now it actually is applied to blockValue
+    int64_t ret = static_cast<int64_t>(blockHeight * 0.677777777777777777); // ~2/3 masternode stake reward
     return ret;
 }
