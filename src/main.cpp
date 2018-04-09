@@ -4430,6 +4430,6 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 {
     // MBK: Set masternode reward phase
     //      NOTE: Fixed the reward, now it actually is applied to blockValue
-    int64_t ret = static_cast<int64_t>(blockHeight * 0.677777777777777777); // ~2/3 masternode stake reward
+    int64_t ret = static_cast<int64_t>(blockValue * 0.677777777777777777); // ~2/3 masternode stake reward
     return ret;
 }
