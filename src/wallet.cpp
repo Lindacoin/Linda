@@ -3576,7 +3576,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, nReward);
 
     // MBK: Added some additional debugging information
-    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> blockValue=%d(%s), masternodePayment=%d(%s)\n", blockValue, FormateMoney(blockValue), masternodePayment, FormatMoney(masternodePayment));
+    if (MBK_EXTRA_DEBUG) LogPrintf("CWallet::CreateCoinStake() -> blockValue=%d(%s), masternodePayment=%d(%s)\n", blockValue, FormatMoney(blockValue), masternodePayment, FormatMoney(masternodePayment));
 
     // Set output amount
     if (!hasPayment && txNew.vout.size() == 3) // 2 stake outputs, stake was split, no masternode payment
