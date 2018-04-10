@@ -267,10 +267,10 @@ build libsecp256k1
 ```
 cd ~/Linda/src/secp256k1
 ./autogen.sh
-./configure
+./configure --enable-static --disable-shared
 make
 ```
-Just by precaution, go to secp256k1/.libs dir and delete all non static libs (all except *.a files) to make sure only that one will be used during linking
+Just by precaution, go to secp256k1/.libs dir and delete all non static libs (all except *.a files) if present, to make sure only static libs will be used during linking
 
 go back to Lindacoin dir to modify Linda-qt.pro if needed :
 ```
