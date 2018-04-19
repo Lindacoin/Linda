@@ -356,27 +356,41 @@ CNode* FindNode(const CService& addr)
 
 CNode* ConnectNode(CAddress addrConnect, const char *pszDest, bool darkSendMaster)
 {
-    if (pszDest == NULL) {
+    // MBK: Added additional debug information
+    if(MBK_EXTRA_DEBUG)
+    {
+        LogPrintf("ConnectNode() [PreNullCheck] -> pszDest=%s darkSendMaster=%s\n", (pszDest == NULL ? "NULL" : pszDest), (darkSendMaster == true ? "True" : "False"));
+    }
+
+    if (pszDest == NULL) 
+    {
         if (IsLocal(addrConnect))
+        {
+            // MBK: Added additional debug information
+            if(MBK_EXTRA_DEBUG)
+            {
+                LogPrintf("ConnectNode() [PostNullCheck] -> IsLocal() = True\n");
+            }
+
             return NULL;
+        }
 
         // Look for an existing connection
         CNode* pnode = FindNode((CService)addrConnect);
         if (pnode)
         {
-	    if(darkSendMaster)
+	        if(darkSendMaster)
                 pnode->fDarkSendMaster = true;
 
             pnode->AddRef();
             return pnode;
         }
+
     }
 
 
     /// debug print
-    LogPrint("net", "trying connection %s lastseen=%.1fhrs\n",
-        pszDest ? pszDest : addrConnect.ToString(),
-        pszDest ? 0 : (double)(GetAdjustedTime() - addrConnect.nTime)/3600.0);
+    LogPrint("net", "trying connection %s lastseen=%.1fhrs\n", pszDest ? pszDest : addrConnect.ToString(), pszDest ? 0 : (double)(GetAdjustedTime() - addrConnect.nTime)/3600.0);
 
     // Connect
     SOCKET hSocket;
@@ -409,7 +423,9 @@ CNode* ConnectNode(CAddress addrConnect, const char *pszDest, bool darkSendMaste
 
         pnode->nTimeConnected = GetTime();
         return pnode;
-    } else if (!proxyConnectionFailed) {
+    } 
+    else if (!proxyConnectionFailed) 
+    {
         // If connecting to the node failed, and failure is not caused by a problem connecting to
         // the proxy, mark this as an attempt.
         addrman.Attempt(addrConnect);
@@ -1582,6 +1598,7 @@ bool BindListenPort(const CService &addrBind, string& strError)
         LogPrintf("%s\n", strError);
         return false;
     }
+
     LogPrintf("Bound to %s\n", addrBind.ToString());
 
     // Listen for incoming connections
