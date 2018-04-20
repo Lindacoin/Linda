@@ -855,9 +855,9 @@ Value ListReceived(const Array& params, bool fByAccounts)
     Array ret;
     map<string, tallyitem> mapAccountTally;
     BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
-    {
+    {        
         const CBitcoinAddress& address = item.first;
-        const string& strAccount = item.second;
+        const string& strAccount = item.second;        
         map<CBitcoinAddress, tallyitem>::iterator it = mapTally.find(address);
         if ((it == mapTally.end() && !fIncludeEmpty) || !IsMine(*pwalletMain, address.Get()))
             continue;
@@ -884,6 +884,41 @@ Value ListReceived(const Array& params, bool fByAccounts)
             obj.push_back(Pair("amount",        ValueFromAmount(nAmount)));
             obj.push_back(Pair("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf)));
             ret.push_back(obj);
+        }
+    }
+
+    // Add addresses from mapTally (this will include change addresses which aren't in the address book)
+    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, tallyitem)& item, mapTally)
+    {        
+        const CBitcoinAddress& address = item.first;
+        const string& strAccount = "(change)";
+
+        map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+        if (mi == pwalletMain->mapAddressBook.end()) {
+        
+            if (!IsMine(*pwalletMain, address.Get()))
+                continue;
+
+            int64_t nAmount = 0;
+            int nConf = std::numeric_limits<int>::max();
+            nAmount = item.second.nAmount;
+            nConf = item.second.nConf;
+
+            if (fByAccounts)
+            {
+                tallyitem& item = mapAccountTally[strAccount];
+                item.nAmount += nAmount;
+                item.nConf = min(item.nConf, nConf);
+            }
+            else
+            {
+                Object obj;
+                obj.push_back(Pair("address",       address.ToString()));
+                obj.push_back(Pair("account",       strAccount));
+                obj.push_back(Pair("amount",        ValueFromAmount(nAmount)));
+                obj.push_back(Pair("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf)));
+                ret.push_back(obj);
+            }
         }
     }
 
