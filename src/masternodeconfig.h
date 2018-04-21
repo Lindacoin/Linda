@@ -86,6 +86,8 @@ public:
 	void clear();
     bool read(std::string& strErr);
 	void add(std::string alias, std::string ip, std::string privKey, std::string txHash, std::string outputIndex);
+	bool create(std::string alias, std::string ip, std::string privKey, std::string txHash, std::string outputIndex);
+	bool remove(std::string alias);
 
 	std::vector<CMasternodeEntry>& getEntries() {
 		return entries;

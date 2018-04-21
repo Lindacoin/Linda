@@ -904,6 +904,9 @@ Value ListReceived(const Array& params, bool fByAccounts)
             nAmount = item.second.nAmount;
             nConf = item.second.nConf;
 
+            if (!fIncludeEmpty && nAmount == 0)
+                 continue;
+
             if (fByAccounts)
             {
                 tallyitem& item = mapAccountTally[strAccount];
