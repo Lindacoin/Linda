@@ -126,11 +126,11 @@ Value masternode(const Array& params, bool fHelp)
         strCommand = params[0].get_str();
 
     if (fHelp  ||
-        (strCommand != "init" && strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" && strCommand != "stop" && strCommand != "stop-alias" && strCommand != "stop-many" && strCommand != "list" && strCommand != "list-conf" && strCommand != "count"  && strCommand != "enforce"
+        (strCommand != "init" && strCommand != "isInit" && strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" && strCommand != "stop" && strCommand != "stop-alias" && strCommand != "stop-many" && strCommand != "kill" && strCommand != "list" && strCommand != "list-conf" && strCommand != "count"  && strCommand != "enforce"
             && strCommand != "debug" && strCommand != "current" && strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" && strCommand != "outputs"
              && strCommand != "addremote" && strCommand != "removeremote" && strCommand != "status" && strCommand != "status-all"))
         throw runtime_error(
-            "masternode <init|start|start-alias|start-many|stop|stop-alias|stop-many|list|list-conf|count|debug|current|winners|genkey|enforce|outputs|addremote|removeremote|status|status-all> [passphrase]\n");
+            "masternode <init|isInit|start|start-alias|start-many|stop|stop-alias|stop-many|kill|list|list-conf|count|debug|current|winners|genkey|enforce|outputs|addremote|removeremote|status|status-all> [passphrase]\n");
 
     if (strCommand == "stop")
     {
@@ -688,6 +688,29 @@ Value masternode(const Array& params, bool fHelp)
 
         fMasterNode = true;
         LogPrintf("IS DARKSEND MASTER NODE\n");
+
+        return true;
+    }
+
+    if (strCommand == "kill") return fMasterNode = false;
+
+    if (strCommand == "isInit") {
+        // check flag and variables are set
+        if (!fMasterNode || strMasterNodeAddr == "" || strMasterNodePrivKey == "")
+            return false;
+        
+        // check valid address
+        CService addrTest = CService(strMasterNodeAddr);
+        if (!addrTest.IsValid())
+            return false;
+
+        std::string errorMessage;
+
+        CKey key;
+        CPubKey pubkey;
+
+        if(!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, key, pubkey))
+            return false;
 
         return true;
     }
