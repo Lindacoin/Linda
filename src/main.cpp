@@ -1152,7 +1152,7 @@ static CBigNum GetProofOfStakeLimit(int nHeight)
 int64_t GetProofOfWorkReward(int64_t nFees, unsigned int nHeight)
 {
     int64_t nSubsidy = 0;
-
+        
     if(pindexBest->nHeight < PREMINE_BLOCK)
     {
         nSubsidy = 500000000 * COIN; //  PREMINE 10 BLOCKS
@@ -1315,7 +1315,7 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
 
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
-    //if(pindexLast->GetBlockTime() > STAKE_TIMESPAN_SWITCH_TIME)
+   //if(pindexLast->GetBlockTime() > STAKE_TIMESPAN_SWITCH_TIME)
     //    nTargetTimespan = 2 * 60; // 2 minutes
 
     CBigNum bnTargetLimit = fProofOfStake ? GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit();
@@ -1396,7 +1396,7 @@ void Misbehaving(NodeId pnode, int howmuch)
         {
             pn->nMisbehavior += howmuch;
             int banscore = GetArg("-banscore", 100);
-            if (pn->nMisbehavior >= banscore && pn->nMisbehavior - howmuch < banscore)
+           if (pn->nMisbehavior >= banscore && pn->nMisbehavior - howmuch < banscore)
             {
                 // MBK: Added some additional debugging information
                 LogPrintf("Misbehaving() -> Misbehaving: %s howmuch=%d (%d -> %d) BAN THRESHOLD EXCEEDED\n", pn->addrName, howmuch, pn->nMisbehavior-howmuch, pn->nMisbehavior);
@@ -1855,7 +1855,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     BOOST_FOREACH(CTransaction& tx, vtx)
     {
         uint256 hashTx = tx.GetHash();
-	    nInputs += tx.vin.size();
+	nInputs += tx.vin.size();
 
         // Do not allow blocks that contain transactions which 'overwrite' older transactions,
         // unless those are already completely spent.
@@ -1908,7 +1908,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                 nFees += nTxValueIn - nTxValueOut;
             if (tx.IsCoinStake())
                 nStakeReward = nTxValueOut - nTxValueIn;
-            
+
 	    //if(setValidatedTx.find(hashTx) == setValidatedTx.end())
 	    //{
                 if (!tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, flags))
@@ -1935,8 +1935,9 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     if (IsProofOfWork())
     {
         // MBK: Calculate the reward based on the wallet version
+        // DS: Should adjust based on block before or after V2 release
         int64_t nReward = 0;
-        if(CURRENT_WALLET_VERSION == 2)
+        if(pindex->nHeight >= POS_REWARD_V2_START_BLOCK)
         {
             nReward = GetProofOfWorkRewardV2(nFees,pindex->nHeight);
         }
@@ -1944,7 +1945,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         {
             nReward = GetProofOfWorkReward(nFees,pindex->nHeight);
         }
-
+        
         // Check coinbase reward
         if (vtx[0].GetValueOut() > nReward)
             return DoS(50, error("ConnectBlock() : coinbase reward exceeded (actual=%d vs calculated=%d)",
@@ -1955,7 +1956,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     // MBK: Calculate the stake reward burn
     if(CURRENT_WALLET_VERSION == 2)
     {
-        // MBK: Start the PoS reward burn to help offset future inflation to cap
+    // MBK: Start the PoS reward burn to help offset future inflation to cap
         if(pindex->nHeight >= POS_REWARD_V2_START_BLOCK /*|| CURRENT_WALLET_VERSION == 2*/)
         {
             nStakeReward = nStakeReward - (nStakeReward * POS_REWARD_V2_BURN_RATE);
@@ -1971,8 +1972,9 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString());
 
         // MBK: Calculate the stake reward based on current wallet version
+        // DS: Should adjust based on block before or after V2 release
         int64_t nCalculatedStakeReward = 0;
-        if(CURRENT_WALLET_VERSION == 2)
+        if(pindex->nHeight >= POS_REWARD_V2_START_BLOCK)
         {
             nCalculatedStakeReward = GetProofOfStakeRewardV2(nCoinAge, nFees, pindex->nHeight);
         }
@@ -2347,7 +2349,7 @@ bool CTransaction::GetCoinAge(CTxDB& txdb, uint64_t& nCoinAge) const
 
         int64_t nValueIn = txPrev.vout[txin.prevout.n].nValue;
         bnCentSecond += CBigNum(nValueIn) * (nTime-txPrev.nTime) / CENT;
-        
+
         LogPrint("coinage", "coin age nValueIn=%d nTimeDiff=%d bnCentSecond=%s\n", nValueIn, nTime - txPrev.nTime, bnCentSecond.ToString());
         LogPrintf("CTransaction::GetCoinAge() -> coin age nValueIn=%d(%s) nTimeDiff=%d bnCentSecond=%s\n", nValueIn, FormatMoney(nValueIn), nTime - txPrev.nTime, bnCentSecond.ToString());
     }
