@@ -4,3 +4,8 @@ src/qt/locale/*.qm
 
 release/
 debug/
+*.P
+
+*.o
+
+src/Lindad
