@@ -83,6 +83,11 @@ extern enum Checkpoints::CPMode CheckpointsMode;
 
 std::set<uint256> setValidatedTx;
 
+// Blocks that are in flight, and that are in the queue to be downloaded.
+// Protected by cs_main.
+map<uint256, pair<NodeId, list<QueuedBlock>::iterator> > mapBlocksInFlight;
+map<uint256, pair<NodeId, list<uint256>::iterator> > mapBlocksToDownload;
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // dispatching functions
@@ -148,16 +153,109 @@ void ResendWalletTransactions(bool fForce) {
 // Registration of network node signals.
 //
 
+void FinalizeNode(NodeId pnode) {
+    LOCK(cs_main);
+
+    BOOST_FOREACH(CNode* pn, vNodes)
+    {
+        if(pn->GetId() == pnode)
+        {
+            BOOST_FOREACH(const QueuedBlock& entry, pn->vBlocksInFlight)
+                mapBlocksInFlight.erase(entry.hash);
+            BOOST_FOREACH(const uint256& hash, pn->vBlocksToDownload)
+                mapBlocksToDownload.erase(hash);
+            break;
+        }
+    }   
+}
+
+// Requires cs_main.
+void MarkBlockAsReceived(const uint256 &hash, NodeId nodeFrom = -1) {
+    map<uint256, pair<NodeId, list<uint256>::iterator> >::iterator itToDownload = mapBlocksToDownload.find(hash);
+    if (itToDownload != mapBlocksToDownload.end()) {
+        BOOST_FOREACH(CNode* pn, vNodes)
+        {
+            if(pn->GetId() == itToDownload->second.first)
+            {
+                pn->vBlocksToDownload.erase(itToDownload->second.second);
+                pn->nBlocksToDownload--;
+                mapBlocksToDownload.erase(itToDownload);
+                break;
+            }
+        } 
+    }
+
+    map<uint256, pair<NodeId, list<QueuedBlock>::iterator> >::iterator itInFlight = mapBlocksInFlight.find(hash);
+    if (itInFlight != mapBlocksInFlight.end()) {
+        BOOST_FOREACH(CNode* pn, vNodes)
+        {
+            if(pn->GetId() == itToDownload->second.first)
+            {
+                pn->vBlocksInFlight.erase(itInFlight->second.second);
+                pn->nBlocksInFlight--;
+                if (itInFlight->second.first == nodeFrom)
+                    pn->nLastBlockReceive = GetTimeMicros();
+                mapBlocksInFlight.erase(itInFlight);
+                break;
+            }
+        }
+    }
+
+}
+
+// Requires cs_main.
+bool AddBlockToQueue(NodeId nodeid, const uint256 &hash) {
+    if (mapBlocksToDownload.count(hash) || mapBlocksInFlight.count(hash))
+        return false;
+
+    BOOST_FOREACH(CNode* pn, vNodes)
+    {
+        if(pn->GetId() == nodeid)
+        {
+            list<uint256>::iterator it = pn->vBlocksToDownload.insert(pn->vBlocksToDownload.end(), hash);
+            pn->nBlocksToDownload++;
+            if (pn->nBlocksToDownload > 5000)
+                Misbehaving(nodeid, 10);
+            mapBlocksToDownload[hash] = std::make_pair(nodeid, it);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Requires cs_main.
+void MarkBlockAsInFlight(NodeId nodeid, const uint256 &hash) {
+    BOOST_FOREACH(CNode* pn, vNodes)
+    {
+        if(pn->GetId() == nodeid)
+        {
+            assert(true);
+
+            // Make sure it's not listed somewhere already.
+            MarkBlockAsReceived(hash);
+
+            QueuedBlock newentry = {hash, GetTimeMicros(), pn->nBlocksInFlight};
+            if (pn->nBlocksInFlight == 0)
+                pn->nLastBlockReceive = newentry.nTime; // Reset when a first request is sent.
+            list<QueuedBlock>::iterator it = pn->vBlocksInFlight.insert(pn->vBlocksInFlight.end(), newentry);
+            pn->nBlocksInFlight++;
+            mapBlocksInFlight[hash] = std::make_pair(nodeid, it);
+        }
+    }
+}
+
 void RegisterNodeSignals(CNodeSignals& nodeSignals)
 {
     nodeSignals.ProcessMessages.connect(&ProcessMessages);
     nodeSignals.SendMessages.connect(&SendMessages);
+    nodeSignals.FinalizeNode.connect(&FinalizeNode);
 }
 
 void UnregisterNodeSignals(CNodeSignals& nodeSignals)
 {
     nodeSignals.ProcessMessages.disconnect(&ProcessMessages);
     nodeSignals.SendMessages.disconnect(&SendMessages);
+    nodeSignals.FinalizeNode.disconnect(&FinalizeNode);
 }
 
 bool AbortNode(const std::string &strMessage, const std::string &userMessage) {
@@ -3529,6 +3627,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         return true;
     }
 
+    // DS: update last valid block from node
+    pfrom->nLastBlockProcess = GetTimeMicros();
+
     if (strCommand == "version")
     {
         // Each connection can only send one version message
@@ -3756,17 +3857,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             LogPrint("net", "  got inventory: %s  %s\n", inv.ToString(), fAlreadyHave ? "have" : "new");
 
             if (!fAlreadyHave) {
-                if (!fImporting)
-                    pfrom->AskFor(inv);
+                if (!fImporting){
+                    if (inv.type == MSG_BLOCK)
+                        AddBlockToQueue(pfrom->GetId(), inv.hash);
+                    else
+                        pfrom->AskFor(inv);
+                }
             } else if (inv.type == MSG_BLOCK && mapOrphanBlocks.count(inv.hash)) {
                 PushGetBlocks(pfrom, pindexBest, GetOrphanRoot(inv.hash));
-            } else if (nInv == nLastBlock) {
-                // In case we are on a very long side-chain, it is possible that we already have
-                // the last block in an inv bundle sent in response to getblocks. Try to detect
-                // this situation and push another getblocks to continue.
-                PushGetBlocks(pfrom, mapBlockIndex[inv.hash], uint256(0));
-                if (fDebug)
-                    LogPrintf("force request: %s\n", inv.ToString());
             }
 
             // Track requests for our stuff
@@ -3964,6 +4062,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         pfrom->AddInventoryKnown(inv);
 
         LOCK(cs_main);
+
+        MarkBlockAsReceived(inv.hash, pfrom->GetId());
 
         if (ProcessBlock(pfrom, &block))
             mapAlreadyAskedFor.erase(inv);
@@ -4397,13 +4497,40 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
             pto->PushMessage("inv", vInv);
 
 
+        // Detect stalled peers. Require that blocks are in flight, we haven't
+        // received a (requested) block in one minute, and that all blocks are
+        // in flight for over two minutes, since we first had a chance to
+        // process an incoming block.
+        int64_t nNow = GetTimeMicros();
+        if (!pto->fDisconnect && pto->nBlocksInFlight && 
+            pto->nLastBlockReceive < pto->nLastBlockProcess - BLOCK_DOWNLOAD_TIMEOUT*1000000 && 
+            pto->vBlocksInFlight.front().nTime < pto->nLastBlockProcess - 2*BLOCK_DOWNLOAD_TIMEOUT*1000000) {
+            LogPrintf("Peer %s is stalling block download, disconnecting\n", pto->addr.ToString().c_str());
+            pto->fDisconnect = true;
+        }
+
         //
-        // Message: getdata
+        // Message: getdata (blocks)
         //
-        vector<CInv> vGetData;
-        int64_t nNow = GetTime() * 1000000;
+        std::vector<CInv> vGetData;
         CTxDB txdb("r");
-        while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
+        while (!pto->fDisconnect && pto->nBlocksToDownload && pto->nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
+            uint256 hash = pto->vBlocksToDownload.front();
+            CInv bCInv(MSG_BLOCK, hash);
+            vGetData.push_back(CInv(MSG_BLOCK, hash));
+            MarkBlockAsInFlight(pto->GetId(), hash);
+            LogPrint("net", "Requesting block %s from %s\n", hash.ToString().c_str(), pto->addr.ToString().c_str());
+            if (vGetData.size() >= 1000)
+            {
+                pto->PushMessage("getdata", vGetData);
+                vGetData.clear();
+            }
+        }
+
+        //
+        // Message: getdata (non-blocks)
+        //
+        while (!pto->fDisconnect && !pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
         {
             const CInv& inv = (*pto->mapAskFor.begin()).second;
             if (!AlreadyHave(txdb, inv))
