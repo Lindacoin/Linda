@@ -212,7 +212,7 @@ cd ~/deps
 tar xvfz miniupnpc-1.9.tar.gz
 
 cd miniupnpc-1.9
-make init upnpc-static
+make upnpc-static
 ```
 ==> Important : don't forget to rename "miniupnpc-1.9" directory to "miniupnpc"
 
