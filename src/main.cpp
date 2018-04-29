@@ -189,7 +189,7 @@ void MarkBlockAsReceived(const uint256 &hash, NodeId nodeFrom = -1) {
     if (itInFlight != mapBlocksInFlight.end()) {
         BOOST_FOREACH(CNode* pn, vNodes)
         {
-            if(pn->GetId() == itToDownload->second.first)
+            if(pn->GetId() == itInFlight->second.first)
             {
                 pn->vBlocksInFlight.erase(itInFlight->second.second);
                 pn->nBlocksInFlight--;
@@ -1498,7 +1498,7 @@ void Misbehaving(NodeId pnode, int howmuch)
             {
                 // MBK: Added some additional debugging information
                 LogPrintf("Misbehaving() -> Misbehaving: %s howmuch=%d (%d -> %d) BAN THRESHOLD EXCEEDED\n", pn->addrName, howmuch, pn->nMisbehavior-howmuch, pn->nMisbehavior);
-                //pn->fShouldBan = true;
+                pn->fShouldBan = true;
             } 
             else
                 LogPrintf("Misbehaving() -> Misbehaving: %s howmuch=%d (%d -> %d)\n", pn->addrName, howmuch, pn->nMisbehavior-howmuch, pn->nMisbehavior);
@@ -3834,15 +3834,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             return error("message inv size() = %u", vInv.size());
         }
 
-        // find last block in inv vector
-        unsigned int nLastBlock = (unsigned int)(-1);
-        for (unsigned int nInv = 0; nInv < vInv.size(); nInv++) {
-            if (vInv[vInv.size() - 1 - nInv].type == MSG_BLOCK) {
-                nLastBlock = vInv.size() - 1 - nInv;
-                break;
-            }
-        }
-
         LOCK(cs_main);
         CTxDB txdb("r");
 
@@ -4065,8 +4056,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         MarkBlockAsReceived(inv.hash, pfrom->GetId());
 
-        if (ProcessBlock(pfrom, &block))
-            mapAlreadyAskedFor.erase(inv);
+        if (ProcessBlock(pfrom, &block))            
+            mapAlreadyAskedFor.erase(inv);        
         if (block.nDoS) pfrom->Misbehaving(block.nDoS);
     }
 
@@ -4231,6 +4222,25 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
     return true;
 }
 
+static bool SendRejectsAndCheckIfBanned(CNode* pnode)
+{
+    AssertLockHeld(cs_main);
+
+    if (pnode->fShouldBan) {
+        pnode->fShouldBan = false;
+            pnode->fDisconnect = true;
+            if (pnode->addr.IsLocal())
+                LogPrintf("Warning: not banning local peer %s!\n", pnode->addr.ToString());
+            else
+            {
+                // DS: Should ban with respect timeout to prevent auto reconnect but we'll just disconnect for now
+            }
+        return true;
+    }
+    return false;
+}
+
+
 // requires LOCK(cs_vRecvMsg)
 bool ProcessMessages(CNode* pfrom)
 {
@@ -4348,6 +4358,10 @@ bool ProcessMessages(CNode* pfrom)
     if (!pfrom->fDisconnect)
         pfrom->vRecvMsg.erase(pfrom->vRecvMsg.begin(), it);
 
+    // DS: Check if node should be banned
+    LOCK(cs_main);
+    SendRejectsAndCheckIfBanned(pfrom);
+
     return fOk;
 }
 
@@ -4388,6 +4402,14 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
                 pto->PushMessage("ping");
             }
         }
+
+        TRY_LOCK(cs_main, lockMain); // Acquire cs_main for IsInitialBlockDownload() and CNodeState()
+        if (!lockMain)
+            return true;
+
+        // DS: Check if node should be banned
+        if (SendRejectsAndCheckIfBanned(pto))
+            return true;
 
         // Start block sync
         if (pto->fStartSync && !fImporting && !fReindex) {
@@ -4519,7 +4541,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
             CInv bCInv(MSG_BLOCK, hash);
             vGetData.push_back(CInv(MSG_BLOCK, hash));
             MarkBlockAsInFlight(pto->GetId(), hash);
-            LogPrint("net", "Requesting block %s from %s\n", hash.ToString().c_str(), pto->addr.ToString().c_str());
+            LogPrintf("Requesting block %s from %s\n", hash.ToString().c_str(), pto->addr.ToString().c_str());
             if (vGetData.size() >= 1000)
             {
                 pto->PushMessage("getdata", vGetData);

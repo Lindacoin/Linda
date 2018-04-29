@@ -854,7 +854,7 @@ void ThreadSocketHandler()
                 if (nErr != WSAEWOULDBLOCK)
                     LogPrintf("socket error accept failed: %d\n", nErr);
             }
-            else if (nInbound >= GetArg("-maxconnections", 256) - MAX_OUTBOUND_CONNECTIONS)
+            else if (nInbound >= GetArg("-maxconnections", DEFAULT_MAX_CONNECTIONS) - MAX_OUTBOUND_CONNECTIONS)
             {
                 closesocket(hSocket);
             }
@@ -1423,7 +1423,7 @@ void static StartSync(const vector<CNode*> &vNodes) {
             int64_t nScore = NodeSyncScore(pnode);
             if (pnodeNewSync == NULL || nScore > nBestScore) {
                 pnodeNewSync = pnode;
-                nBestScore = nScore;
+                nBestScore = nScore;                
             }
         }
     }
@@ -1672,7 +1672,7 @@ void StartNode(boost::thread_group& threadGroup)
 {
     if (semOutbound == NULL) {
         // initialize semaphore
-        int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, (int)GetArg("-maxconnections", 125));
+        int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, (int)GetArg("-maxconnections", DEFAULT_MAX_CONNECTIONS));
         semOutbound = new CSemaphore(nMaxOutbound);
     }
 

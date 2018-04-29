@@ -121,13 +121,16 @@ inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MO
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
 /** Number of blocks that can be requested at any given time from a single peer. */
-static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 32;
+static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 128;
 /** Timeout in seconds before considering a block download peer unresponsive. */
 static const unsigned int BLOCK_DOWNLOAD_TIMEOUT = 60;
 
+/** default for -maxconnections, maximum number of connected peers */
+static const unsigned int DEFAULT_MAX_CONNECTIONS = 256;
+
 static const int64_t COIN_YEAR_REWARD = 99 * CENT; // 99% per year
-static const unsigned int POS_START_BLOCK = 25;
-static const unsigned int DIFF_FORK_BLOCK = 100;
+static const int POS_START_BLOCK = 25;
+static const int DIFF_FORK_BLOCK = 100;
 
 
 inline bool IsProtocolV1RetargetingFixed(int nHeight) { return TestNet() || nHeight >= 0; }
