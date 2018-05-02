@@ -43,7 +43,7 @@ void MasternodeManager::updateNodeList()
 {
     BOOST_FOREACH(CMasterNode mn, vecMasternodes) 
     {
-	bool bFound = false;
+	    bool bFound = false;
         int mnRow = 0;
         for(int i=0; i < ui->tableWidget->rowCount(); i++)
         {
@@ -56,33 +56,35 @@ void MasternodeManager::updateNodeList()
         }
 
         if(mnRow == 0 && !bFound)
+        {
             ui->tableWidget->insertRow(0);
+        }
 
- 	// populate list
-	// Address, Rank, Active, Active Seconds, Last Seen, Pub Key
-	QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn.IsEnabled()));
-	QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
-	QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn.vin, pindexBest->nHeight)));
-	QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::number((qint64)(mn.lastTimeSeen - mn.now)));
-	int64_t unixTime = mn.lastTimeSeen;
-	QDateTime timestamp;
-	timestamp.setTime_t(unixTime);
+        // populate list
+        // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
+        QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn.IsEnabled()));
+        QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
+        QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn.vin, pindexBest->nHeight)));
+        QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::number((qint64)(mn.lastTimeSeen - mn.now)));
+        int64_t unixTime = mn.lastTimeSeen;
+        QDateTime timestamp;
+        timestamp.setTime_t(unixTime);
 	
-	QTableWidgetItem *lastSeenItem = new QTableWidgetItem(timestamp.toString(Qt::SystemLocaleShortDate));
+	    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(timestamp.toString(Qt::SystemLocaleShortDate));
 
-	CScript pubkey;
+	    CScript pubkey;
         pubkey =GetScriptForDestination(mn.pubkey.GetID());
         CTxDestination address1;
         ExtractDestination(pubkey, address1);
         CBitcoinAddress address2(address1);
-	QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
+	    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
 	
-	ui->tableWidget->setItem(mnRow, 0, addressItem);
-	ui->tableWidget->setItem(mnRow, 1, rankItem);
-	ui->tableWidget->setItem(mnRow, 2, activeItem);
-	ui->tableWidget->setItem(mnRow, 3, activeSecondsItem);
-	ui->tableWidget->setItem(mnRow, 4, lastSeenItem);
-	ui->tableWidget->setItem(mnRow, 5, pubkeyItem);
+        ui->tableWidget->setItem(mnRow, 0, addressItem);
+        ui->tableWidget->setItem(mnRow, 1, rankItem);
+        ui->tableWidget->setItem(mnRow, 2, activeItem);
+        ui->tableWidget->setItem(mnRow, 3, activeSecondsItem);
+        ui->tableWidget->setItem(mnRow, 4, lastSeenItem);
+        ui->tableWidget->setItem(mnRow, 5, pubkeyItem);
     }
 }
 
