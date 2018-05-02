@@ -41,53 +41,70 @@ MasternodeManager::~MasternodeManager()
 
 void MasternodeManager::updateNodeList()
 {
-    BOOST_FOREACH(CMasterNode mn, vecMasternodes) 
+    // Load masternodes into a map for faster lookups.
+    QMap<QString, CMasterNode*> mapMasternodes;
+    BOOST_FOREACH(CMasterNode& mn, vecMasternodes)
     {
-	    bool bFound = false;
-        int mnRow = 0;
-        for(int i=0; i < ui->tableWidget->rowCount(); i++)
-        {
-            if(ui->tableWidget->item(i, 0)->text() == QString::fromStdString(mn.addr.ToString()))
-            {
-                bFound = true;
-                mnRow = i;
-                break;
-            }
-        }
+        std::string addr = mn.addr.ToString();
+        mapMasternodes[QString::fromStdString(addr).normalized(QString::NormalizationForm_D)] = &mn;
+    }
 
-        if(mnRow == 0 && !bFound)
+    // Update existing masternode rows.
+    for(int i=0; i < ui->tableWidget->rowCount(); i++)
+    {
+        QString addr = ui->tableWidget->item(i, 0)->text();
+
+        if (mapMasternodes.contains(addr))
         {
-            ui->tableWidget->insertRow(0);
+            CMasterNode *mn = mapMasternodes.value(addr);
+
+            // populate list
+            updateNodeListRow(mn, i);
+
+            mapMasternodes.remove(addr);
         }
+    }
+
+    // Add new masternode rows.
+    QMapIterator<QString, CMasterNode*> mnIterator(mapMasternodes);
+    while (mnIterator.hasNext())
+    {
+        mnIterator.next();
+        CMasterNode *mn = mnIterator.value();
 
         // populate list
-        // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
-        QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn.IsEnabled()));
-        QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
-        QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn.vin, pindexBest->nHeight)));
-        QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::number((qint64)(mn.lastTimeSeen - mn.now)));
-        int64_t unixTime = mn.lastTimeSeen;
-        QDateTime timestamp;
-        timestamp.setTime_t(unixTime);
-	
-	    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(timestamp.toString(Qt::SystemLocaleShortDate));
-
-	    CScript pubkey;
-        pubkey =GetScriptForDestination(mn.pubkey.GetID());
-        CTxDestination address1;
-        ExtractDestination(pubkey, address1);
-        CBitcoinAddress address2(address1);
-	    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
-	
-        ui->tableWidget->setItem(mnRow, 0, addressItem);
-        ui->tableWidget->setItem(mnRow, 1, rankItem);
-        ui->tableWidget->setItem(mnRow, 2, activeItem);
-        ui->tableWidget->setItem(mnRow, 3, activeSecondsItem);
-        ui->tableWidget->setItem(mnRow, 4, lastSeenItem);
-        ui->tableWidget->setItem(mnRow, 5, pubkeyItem);
+        ui->tableWidget->insertRow(0);
+        updateNodeListRow(mn, 0);
     }
 }
 
+void MasternodeManager::updateNodeListRow(CMasterNode *mn, int mnRow)
+{
+    // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
+    QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn->IsEnabled()));
+    QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn->addr.ToString()).normalized(QString::NormalizationForm_D));
+    QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn->vin, pindexBest->nHeight)));
+    QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::number((qint64)(mn->lastTimeSeen - mn->now)));
+    int64_t unixTime = mn->lastTimeSeen;
+    QDateTime timestamp;
+    timestamp.setTime_t(unixTime);
+
+    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(timestamp.toString(Qt::SystemLocaleShortDate));
+
+    CScript pubkey;
+    pubkey = GetScriptForDestination(mn->pubkey.GetID());
+    CTxDestination address1;
+    ExtractDestination(pubkey, address1);
+    CBitcoinAddress address2(address1);
+    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
+
+    ui->tableWidget->setItem(mnRow, 0, addressItem);
+    ui->tableWidget->setItem(mnRow, 1, rankItem);
+    ui->tableWidget->setItem(mnRow, 2, activeItem);
+    ui->tableWidget->setItem(mnRow, 3, activeSecondsItem);
+    ui->tableWidget->setItem(mnRow, 4, lastSeenItem);
+    ui->tableWidget->setItem(mnRow, 5, pubkeyItem);
+}
 
 void MasternodeManager::setClientModel(ClientModel *model)
 {

@@ -1,6 +1,8 @@
 #ifndef MASTERNODEMANAGER_H
 #define MASTERNODEMANAGER_H
 
+#include "masternode.h"
+
 #include <QWidget>
 #include <QTimer>
 
@@ -39,6 +41,8 @@ private:
     WalletModel *walletModel;
 
 private slots:
+    void updateNodeListRow(CMasterNode *mn, int mnRow);
+
 };
 
 #endif // MASTERNODEMANAGER_H
