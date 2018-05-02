@@ -2918,6 +2918,8 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 
         // Accept orphans as long as there is a node to request its parents from
         if (pfrom) {
+            // ban nodes who send too many orphans
+            pfrom->Misbehaving(1);
             // ppcoin: check proof-of-stake
             if (pblock->IsProofOfStake())
             {
