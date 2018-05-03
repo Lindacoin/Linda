@@ -492,13 +492,39 @@ int GetMasternodeByRank(int findRank, int64_t nBlockHeight, int minProtocol)
 
 int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight, int minProtocol)
 {
-    std::vector<pair<unsigned int, CTxIn> > vecMasternodeScores;
+    std::vector<pair<unsigned int, CTxIn>> vecMasternodeScores = GetMasternodeScores(nBlockHeight, minProtocol);
+    return GetMasternodeRank(vin, vecMasternodeScores);
+}
 
-    BOOST_FOREACH(CMasterNode& mn, vecMasternodes) {
+int GetMasternodeRank(CTxIn& vin, std::vector<pair<unsigned int, CTxIn>>& vecMasternodeScores)
+{
+    unsigned int rank = 0;
+    BOOST_FOREACH (PAIRTYPE(unsigned int, CTxIn)& s, vecMasternodeScores)
+    {
+        rank++;
+        if(s.second == vin) 
+        {
+            return rank;
+        }
+    }
+
+    return -1;
+}
+
+std::vector<pair<unsigned int, CTxIn>> GetMasternodeScores(int64_t nBlockHeight, int minProtocol)
+{
+    std::vector<pair<unsigned int, CTxIn>> vecMasternodeScores;
+
+    BOOST_FOREACH(CMasterNode& mn, vecMasternodes) 
+    {
         mn.Check();
+        if(mn.protocolVersion < minProtocol)
+        {
+            continue;
+        }
 
-        if(mn.protocolVersion < minProtocol) continue;
-        if(!mn.IsEnabled()) {
+        if(!mn.IsEnabled()) 
+        {
             continue;
         }
 
@@ -511,15 +537,7 @@ int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight, int minProtocol)
 
     sort(vecMasternodeScores.rbegin(), vecMasternodeScores.rend(), CompareValueOnly());
 
-    unsigned int rank = 0;
-    BOOST_FOREACH (PAIRTYPE(unsigned int, CTxIn)& s, vecMasternodeScores){
-        rank++;
-        if(s.second == vin) {
-            return rank;
-        }
-    }
-
-    return -1;
+    return vecMasternodeScores;
 }
 
 //Get the last hash that matches the modulus given. Processed in reverse order
