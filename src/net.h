@@ -50,16 +50,23 @@ void StartNode(boost::thread_group& threadGroup);
 bool StopNode();
 void SocketSendData(CNode *pnode);
 
+struct QueuedBlock {
+    uint256 hash;
+    int64_t nTime;  // Time of "getdata" request in microseconds.
+    int nQueuedBefore;  // Number of blocks in flight at the time of request.
+};
+
+typedef int NodeId;
+
 // Signals for message handling
 struct CNodeSignals
 {
     boost::signals2::signal<bool (CNode*)> ProcessMessages;
     boost::signals2::signal<bool (CNode*, bool)> SendMessages;
+    boost::signals2::signal<void (NodeId)> FinalizeNode;
 };
 
 CNodeSignals& GetNodeSignals();
-
-typedef int NodeId;
 
 enum
 {
@@ -224,6 +231,7 @@ public:
     bool fNetworkNode;
     bool fSuccessfullyConnected;
     bool fDisconnect;
+    bool fShouldBan;
     // We use fRelayTxes for two purposes -
     // a) it allows us to not relay tx invs before receiving the peer's version message
     // b) the peer may tell us in their version message that we should not relay tx invs
@@ -274,6 +282,14 @@ public:
     // Whether a ping is requested.
     bool fPingQueued;
 
+    // DS: Peer block tracking
+    list<QueuedBlock> vBlocksInFlight;
+    int nBlocksInFlight;
+    list<uint256> vBlocksToDownload;
+    int nBlocksToDownload;
+    int64_t nLastBlockReceive;
+    int64_t nLastBlockProcess;
+
     CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn=false) : ssSend(SER_NETWORK, INIT_PROTO_VERSION), setAddrKnown(5000)
     {
         nServices = 0;
@@ -294,6 +310,7 @@ public:
         fNetworkNode = false;
         fSuccessfullyConnected = false;
         fDisconnect = false;
+        fShouldBan = false;
         nRefCount = 0;
         nSendSize = 0;
         nSendOffset = 0;
@@ -310,6 +327,10 @@ public:
         nPingUsecStart = 0;
         nPingUsecTime = 0;
         fPingQueued = false;
+        nBlocksToDownload = 0;
+        nBlocksInFlight = 0;
+        nLastBlockReceive = 0;
+        nLastBlockProcess = 0;
 
         {
             LOCK(cs_nLastNodeId);
@@ -328,6 +349,7 @@ public:
             closesocket(hSocket);
             hSocket = INVALID_SOCKET;
         }
+        GetNodeSignals().FinalizeNode(GetId());
     }
 
 private:
@@ -424,7 +446,7 @@ public:
         LogPrint("net", "askfor %s   %d (%s)\n", inv.ToString(), nRequestTime, DateTimeStrFormat("%H:%M:%S", nRequestTime/1000000));
 
         // Make sure not to reuse time indexes to keep things in the same order
-        int64_t nNow = (GetTime() - 1) * 1000000;
+        int64_t nNow = GetTimeMicros() - 1000000;
         static int64_t nLastTime;
         ++nLastTime;
         nNow = std::max(nNow, nLastTime);
@@ -728,9 +750,9 @@ inline void RelayInventory(const CInv& inv)
 }
 
 class CTransaction;
-void RelayTransaction(const CTransaction& tx, const uint256& hash);
-void RelayTransaction(const CTransaction& tx, const uint256& hash, const CDataStream& ss);
-void RelayTransactionLockReq(const CTransaction& tx, const uint256& hash, bool relayToAll=false);
+void RelayTransaction(const CTransaction& tx);
+void RelayTransaction(const CTransaction& tx, const CDataStream& ss);
+void RelayTransactionLockReq(const CTransaction& tx, bool relayToAll=false);
 void RelayDarkSendFinalTransaction(const int sessionID, const CTransaction& txNew);
 void RelayDarkSendIn(const std::vector<CTxIn>& in, const int64_t& nAmount, const CTransaction& txCollateral, const std::vector<CTxOut>& out);
 void RelayDarkSendStatus(const int sessionID, const int newState, const int newEntriesCount, const int newAccepted, const std::string error="");

@@ -854,7 +854,7 @@ void ThreadSocketHandler()
                 if (nErr != WSAEWOULDBLOCK)
                     LogPrintf("socket error accept failed: %d\n", nErr);
             }
-            else if (nInbound >= GetArg("-maxconnections", 256) - MAX_OUTBOUND_CONNECTIONS)
+            else if (nInbound >= GetArg("-maxconnections", DEFAULT_MAX_CONNECTIONS) - MAX_OUTBOUND_CONNECTIONS)
             {
                 closesocket(hSocket);
             }
@@ -1423,7 +1423,7 @@ void static StartSync(const vector<CNode*> &vNodes) {
             int64_t nScore = NodeSyncScore(pnode);
             if (pnodeNewSync == NULL || nScore > nBestScore) {
                 pnodeNewSync = pnode;
-                nBestScore = nScore;
+                nBestScore = nScore;                
             }
         }
     }
@@ -1672,7 +1672,7 @@ void StartNode(boost::thread_group& threadGroup)
 {
     if (semOutbound == NULL) {
         // initialize semaphore
-        int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, (int)GetArg("-maxconnections", 125));
+        int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, (int)GetArg("-maxconnections", DEFAULT_MAX_CONNECTIONS));
         semOutbound = new CSemaphore(nMaxOutbound);
     }
 
@@ -1748,17 +1748,17 @@ public:
 }
 instance_of_cnetcleanup;
 
-void RelayTransaction(const CTransaction& tx, const uint256& hash)
+void RelayTransaction(const CTransaction& tx)
 {
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
     ss.reserve(10000);
     ss << tx;
-    RelayTransaction(tx, hash, ss);
+    RelayTransaction(tx, ss);
 }
 
-void RelayTransaction(const CTransaction& tx, const uint256& hash, const CDataStream& ss)
+void RelayTransaction(const CTransaction& tx, const CDataStream& ss)
 {
-    CInv inv(MSG_TX, hash);
+    CInv inv(MSG_TX, tx.GetHash());
     {
         LOCK(cs_mapRelay);
         // Expire old relay messages
@@ -1776,7 +1776,7 @@ void RelayTransaction(const CTransaction& tx, const uint256& hash, const CDataSt
     RelayInventory(inv);
 }
 
-void RelayTransactionLockReq(const CTransaction& tx, const uint256& hash, bool relayToAll)
+void RelayTransactionLockReq(const CTransaction& tx, bool relayToAll)
 {
     CInv inv(MSG_TXLOCK_REQUEST, tx.GetHash());
 
