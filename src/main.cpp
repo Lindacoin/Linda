@@ -165,6 +165,7 @@ void FinalizeNode(NodeId pnode) {
     {
         if(pn->GetId() == pnode)
         {
+            LogPrintf("FinalizeNode:: %i\n", pn->addr.ToString().c_str());
             BOOST_FOREACH(const QueuedBlock& entry, pn->vBlocksInFlight)
                 mapBlocksInFlight.erase(entry.hash);
             BOOST_FOREACH(const uint256& hash, pn->vBlocksToDownload)
@@ -2942,8 +2943,6 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 
         // Accept orphans as long as there is a node to request its parents from
         if (pfrom) {
-            // ban nodes who send too many orphans
-            pfrom->Misbehaving(1);
             // ppcoin: check proof-of-stake
             if (pblock->IsProofOfStake())
             {
