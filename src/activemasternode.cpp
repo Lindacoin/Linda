@@ -71,14 +71,14 @@ void CActiveMasternode::ManageStatus()
             }
         
 
-        if(pwalletMain->IsLocked())
+        if(pwalletMain->IsLocked(true))
         {
             notCapableReason = "Wallet is locked.";
             status = MASTERNODE_NOT_CAPABLE;
             LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason.c_str());
             return;
         }
-
+        
         // Set defaults
         status = MASTERNODE_NOT_CAPABLE;
         notCapableReason = "Unknown. Check debug.log for more information.\n";

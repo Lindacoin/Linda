@@ -319,7 +319,7 @@ Value masternode(const Array& params, bool fHelp)
     {
         if(!fMasterNode) return "you must set masternode=1 in the configuration";
 
-        if(pwalletMain->IsLocked()) {
+        if(pwalletMain->IsLocked(true)) {
             SecureString strWalletPass;
             strWalletPass.reserve(100);
 
