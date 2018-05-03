@@ -46,7 +46,16 @@ void MasternodeManager::updateNodeList()
     BOOST_FOREACH(CMasterNode& mn, vecMasternodes)
     {
         std::string addr = mn.addr.ToString();
-        mapMasternodes[QString::fromStdString(addr).normalized(QString::NormalizationForm_D)] = &mn;
+        QString display = QString::fromStdString(addr).normalized(QString::NormalizationForm_D);
+        int suffixNum = 2;
+
+        while (mapMasternodes.contains(display))
+        {
+            display = QString::fromStdString(addr + " (" + std::to_string(suffixNum) + ")").normalized(QString::NormalizationForm_D);
+            suffixNum++;
+        }
+
+        mapMasternodes[display] = &mn;
     }
 
     std::vector<pair<unsigned int, CTxIn>> vecMasternodeScores = GetMasternodeScores(pindexBest->nHeight);
@@ -63,7 +72,7 @@ void MasternodeManager::updateNodeList()
             CMasterNode *mn = mapMasternodes.value(addr);
 
             // populate list
-            updateNodeListRow(mn, vecMasternodeScores, i);
+            updateNodeListRow(mn, vecMasternodeScores, i, addr);
 
             mapMasternodes.remove(addr);
         }
@@ -81,25 +90,25 @@ void MasternodeManager::updateNodeList()
     {
         mnIterator.next();
         CMasterNode *mn = mnIterator.value();
-
+        
         int lastRow = ui->tableWidget->rowCount();
 
         // populate list
         ui->tableWidget->insertRow(lastRow);
-        updateNodeListRow(mn, vecMasternodeScores, lastRow);
+        updateNodeListRow(mn, vecMasternodeScores, lastRow, mnIterator.key());
     }
 
     ui->tableWidget->setSortingEnabled(true);
 }
 
-void MasternodeManager::updateNodeListRow(CMasterNode *mn, std::vector<pair<unsigned int, CTxIn>>& vecMasternodeScores, int mnRow)
+void MasternodeManager::updateNodeListRow(CMasterNode *mn, std::vector<pair<unsigned int, CTxIn>>& vecMasternodeScores, int mnRow, const QString addr)
 {
     // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
     QTableWidgetItem *activeItem = new QTableWidgetItem();
     int enabled = mn->IsEnabled();
     activeItem->setData(Qt::DisplayRole, enabled);
 
-    QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn->addr.ToString()).normalized(QString::NormalizationForm_D));
+    QTableWidgetItem *addressItem = new QTableWidgetItem(addr);
     QTableWidgetItem *rankItem = new QTableWidgetItem();
     rankItem->setData(Qt::DisplayRole, GetMasternodeRank(mn->vin, vecMasternodeScores));
 
