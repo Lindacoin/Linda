@@ -48,7 +48,7 @@ void MasternodeManager::updateNodeList()
         std::string addr = mn.addr.ToString();
         mapMasternodes[QString::fromStdString(addr).normalized(QString::NormalizationForm_D)] = &mn;
     }
-    
+
     std::vector<pair<unsigned int, CTxIn>> vecMasternodeScores = GetMasternodeScores(pindexBest->nHeight);
 
     // Update existing masternode rows.
@@ -74,9 +74,11 @@ void MasternodeManager::updateNodeList()
         mnIterator.next();
         CMasterNode *mn = mnIterator.value();
 
+        int lastRow = ui->tableWidget->rowCount();
+
         // populate list
-        ui->tableWidget->insertRow(0);
-        updateNodeListRow(mn, vecMasternodeScores, 0);
+        ui->tableWidget->insertRow(lastRow);
+        updateNodeListRow(mn, vecMasternodeScores, lastRow);
     }
 }
 
