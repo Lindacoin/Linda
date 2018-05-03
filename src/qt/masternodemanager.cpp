@@ -65,6 +65,12 @@ void MasternodeManager::updateNodeList()
 
             mapMasternodes.remove(addr);
         }
+        else
+        {
+            // Remove the row if the masternode can't be found.
+            ui->tableWidget->removeRow(i);
+            i--;
+        }
     }
 
     // Add new masternode rows.
