@@ -160,7 +160,9 @@ int GetCurrentMasterNode(int mod=1, int64_t nBlockHeight=0, int minProtocol=CMas
 
 int GetMasternodeByVin(CTxIn& vin);
 int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight=0, int minProtocol=CMasterNode::minProtoVersion);
+int GetMasternodeRank(CTxIn& vin, std::vector<pair<unsigned int, CTxIn>>& vecMasternodeScores);
 int GetMasternodeByRank(int findRank, int64_t nBlockHeight=0, int minProtocol=CMasterNode::minProtoVersion);
+std::vector<pair<unsigned int, CTxIn>> GetMasternodeScores(int64_t nBlockHeight, int minProtocol=CMasterNode::minProtoVersion);
 
 
 // for storing the winning payments

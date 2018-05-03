@@ -41,7 +41,7 @@ private:
     WalletModel *walletModel;
 
 private slots:
-    void updateNodeListRow(CMasterNode *mn, int mnRow);
+    void updateNodeListRow(CMasterNode *mn, std::vector<pair<unsigned int, CTxIn>>& vecMasternodeScores, int mnRow);
 
 };
 
