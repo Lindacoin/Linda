@@ -51,6 +51,8 @@ void MasternodeManager::updateNodeList()
 
     std::vector<pair<unsigned int, CTxIn>> vecMasternodeScores = GetMasternodeScores(pindexBest->nHeight);
 
+    ui->tableWidget->setSortingEnabled(false);
+
     // Update existing masternode rows.
     for(int i=0; i < ui->tableWidget->rowCount(); i++)
     {
@@ -86,15 +88,24 @@ void MasternodeManager::updateNodeList()
         ui->tableWidget->insertRow(lastRow);
         updateNodeListRow(mn, vecMasternodeScores, lastRow);
     }
+
+    ui->tableWidget->setSortingEnabled(true);
 }
 
 void MasternodeManager::updateNodeListRow(CMasterNode *mn, std::vector<pair<unsigned int, CTxIn>>& vecMasternodeScores, int mnRow)
 {
     // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
-    QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn->IsEnabled()));
+    QTableWidgetItem *activeItem = new QTableWidgetItem();
+    int enabled = mn->IsEnabled();
+    activeItem->setData(Qt::DisplayRole, enabled);
+
     QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn->addr.ToString()).normalized(QString::NormalizationForm_D));
-    QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn->vin, vecMasternodeScores)));
-    QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::number((qint64)(mn->lastTimeSeen - mn->now)));
+    QTableWidgetItem *rankItem = new QTableWidgetItem();
+    rankItem->setData(Qt::DisplayRole, GetMasternodeRank(mn->vin, vecMasternodeScores));
+
+    QTableWidgetItem *activeSecondsItem = new QTableWidgetItem();
+    activeSecondsItem->setData(Qt::DisplayRole, (qint64)(mn->lastTimeSeen - mn->now));
+
     int64_t unixTime = mn->lastTimeSeen;
     QDateTime timestamp;
     timestamp.setTime_t(unixTime);
