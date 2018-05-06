@@ -175,6 +175,10 @@ Install Linux development tools
 ```
 sudo apt-get install build-essential libtool automake autotools-dev autoconf pkg-config libgmp3-dev libevent-dev bsdmainutils
 ```
+Additionnal dependencies needed to compile QT
+```
+sudo apt-get install libxcb1-dev libgtk3-dev libgtk2-dev
+```
 ## Compile all dependencies manually and use their static libs
 ### Download and build BerkeleyDB 5.0.32.NC
 ```
@@ -212,7 +216,7 @@ cd ~/deps
 tar xvfz miniupnpc-1.9.tar.gz
 
 cd miniupnpc-1.9
-make init upnpc-static
+make upnpc-static
 ```
 ==> Important : don't forget to rename "miniupnpc-1.9" directory to "miniupnpc"
 
@@ -228,19 +232,21 @@ make depend
 make
 ```
 
-### Compiling QT 5.4.2 statically
-Download QT 5.4.2 sources
-https://download.qt.io/archive/qt/5.4/5.4.2/single/qt-everywhere-opensource-src-5.4.2.tar.gz<br>
+### Compiling QT 5.5.0 statically
+Download QT 5.5.0 sources
+https://download.qt.io/archive/qt/5.5/5.5.0/single/qt-everywhere-opensource-src-5.5.0.tar.gz<br>
 Extract in deps folder
 ```
-tar xvfz qt-everywhere-opensource-src-5.4.2.tar.gz
+tar xvfz qt-everywhere-opensource-src-5.5.0.tar.gz
 ```
 after everything is extracted, create another directory where static libs will be installed. 
-For example, i created ~/deps/Qt/5.4.2_static and used that directory in configure command below (it may take a while) :
+For example, i created ~/deps/Qt/5.5.0_static and used that directory in configure command below (it may take a while) :
 ```
-cd ~/deps/qt-everywhere-opensource-src-5.4.2
+cd ~/deps/qt-everywhere-opensource-src-5.5.0
 
-./configure -static -opensource -release -confirm-license -no-compile-examples -nomake tests -prefix ~/deps/Qt/5.4.2_static -qt-zlib -qt-libpng -no-libjpeg -qt-xcb -qt-freetype -qt-pcre -qt-harfbuzz -largefile -no-openssl -gtkstyle -skip wayland -skip qtserialport -skip script -pulseaudio -alsa -c++11 -nomake tools
+./configure -static -opensource -release -confirm-license -no-compile-examples -nomake tests -prefix ~/deps/Qt/5.5.0_static -qt-zlib -qt-libpng -no-libjpeg -qt-xcb -qt-freetype -qt-pcre -qt-harfbuzz -largefile -no-opengl -no-openssl -gtkstyle -skip wayland -skip qtserialport -skip script -skip qtdeclarative -skip qtwebchannel -alsa -c++11 -nomake tools -no-icu
+
+make -j 4
 ```
 After it successfuly ends :
 ```
