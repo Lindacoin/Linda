@@ -127,9 +127,9 @@ Value masternode(const Array& params, bool fHelp)
 
     if (fHelp  ||
         (strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" && strCommand != "stop" && strCommand != "stop-alias" && strCommand != "stop-many" && strCommand != "list" && strCommand != "list-conf" && strCommand != "count"  && strCommand != "enforce"
-            && strCommand != "debug" && strCommand != "current" && strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" && strCommand != "outputs"))
+            && strCommand != "debug" && strCommand != "current" && strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" && strCommand != "outputs" && strCommand != "status-all"))
         throw runtime_error(
-            "masternode <start|start-alias|start-many|stop|stop-alias|stop-many|list|list-conf|count|debug|current|winners|genkey|enforce|outputs> [passphrase]\n");
+            "masternode <start|start-alias|start-many|stop|stop-alias|stop-many|list|list-conf|count|debug|current|winners|genkey|enforce|outputs|status-all> [passphrase]\n");
 
     if (strCommand == "stop")
     {
@@ -582,6 +582,49 @@ Value masternode(const Array& params, bool fHelp)
 
     }
 
+    if (strCommand == "status-all")
++    {
++        // get masternode status
++        std::vector<Value> resultArr;        
++
++        BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
++            if (strCommand == "status-all" || mn.addr.ToString() == strMasterNodeAddr){
++    		Object mnObj;
++
++            // get masternode address
++            CScript pubkey;
++            pubkey = GetScriptForDestination(mn.pubkey.GetID());
++            CTxDestination address1;
++            ExtractDestination(pubkey, address1);
++            CBitcoinAddress address2(address1);
++
++    		 mnObj.push_back(Pair("minProtoVersion", mn.minProtoVersion));
++            mnObj.push_back(Pair("address", mn.addr.ToString().c_str()));
++    		 mnObj.push_back(Pair("pubkey", address2.ToString().c_str()));
++    		 mnObj.push_back(Pair("vin", mn.vin.ToString()));
++            mnObj.push_back(Pair("lastTimeSeen", mn.lastTimeSeen));            
++            mnObj.push_back(Pair("activeseconds",  mn.lastTimeSeen - mn.now));   
++            mnObj.push_back(Pair("rank", GetMasternodeRank(mn.vin, pindexBest->nHeight)));            
++            mnObj.push_back(Pair("lastDseep", mn.lastDseep));
++            mnObj.push_back(Pair("cacheInputAge", mn.cacheInputAge));
++            mnObj.push_back(Pair("cacheInputAgeBlock", mn.cacheInputAgeBlock));
++            mnObj.push_back(Pair("enabled", mn.enabled));
++            mnObj.push_back(Pair("unitTest", mn.unitTest));
++            mnObj.push_back(Pair("allowFreeTx", mn.allowFreeTx));
++            mnObj.push_back(Pair("protocolVersion", mn.protocolVersion));
++            mnObj.push_back(Pair("nLastDsq", mn.nLastDsq));
++
++            // check if me to include activeMasternode.status
++            if (mn.addr.ToString() == strMasterNodeAddr){
++                mnObj.push_back(Pair("status", activeMasternode.status));                
++            }
++
++    		resultArr.push_back(mnObj);
++            }
++    	}
++
++    	return resultArr;
++    }
+
     return Value::null;
 }
-
