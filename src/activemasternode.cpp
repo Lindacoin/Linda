@@ -87,44 +87,44 @@ void CActiveMasternode::ManageStatus()
         CPubKey pubKeyCollateralAddress;
         CKey keyCollateralAddress;
 
-        if(GetMasterNodeVin(vin, pubKeyCollateralAddress, keyCollateralAddress)) 
-        {
+        // Find possible candidates
+        vector<COutput> possibleCoins = SelectCoinsMasternode();
+        COutput *selectedOutput;
 
-            if(GetInputAge(vin) < MASTERNODE_MIN_CONFIRMATIONS)
-            {
-                LogPrintf("CActiveMasternode::ManageStatus() - Input must have least %d confirmations - %d confirmations\n", MASTERNODE_MIN_CONFIRMATIONS, GetInputAge(vin));
-                status = MASTERNODE_INPUT_TOO_NEW;
-                return;
+        BOOST_FOREACH(COutput& out, possibleCoins) {
+            selectedOutput = &out;
+            // At this point we have a selected output, retrieve the associated info
+            if (GetVinFromOutput(*selectedOutput, vin, pubKeyCollateralAddress, keyCollateralAddress)) {
+
+                if(GetInputAge(vin) < MASTERNODE_MIN_CONFIRMATIONS)
+                {
+                    LogPrintf("CActiveMasternode::ManageStatus() - Input must have least %d confirmations - %d confirmations\n", MASTERNODE_MIN_CONFIRMATIONS, GetInputAge(vin));
+                    status = MASTERNODE_INPUT_TOO_NEW;
+                } else {
+                    LogPrintf("CActiveMasternode::ManageStatus() - Is capable master node!\n");
+
+                    status = MASTERNODE_IS_CAPABLE;
+                    notCapableReason = "";
+
+                    pwalletMain->LockCoin(vin.prevout);
+
+                    // send to all nodes
+                    CPubKey pubKeyMasternode;
+                    CKey keyMasternode;
+
+                    if(!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, keyMasternode, pubKeyMasternode))
+                    {
+                        LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
+                    } else if(!Register(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage)) {
+                        LogPrintf("CActiveMasternode::ManageStatus() - Error on Register: %s\n", errorMessage.c_str());
+                    }
+
+                    return;
+                }
             }
-
-            LogPrintf("CActiveMasternode::ManageStatus() - Is capable master node!\n");
-
-            status = MASTERNODE_IS_CAPABLE;
-            notCapableReason = "";
-
-            pwalletMain->LockCoin(vin.prevout);
-
-            // send to all nodes
-            CPubKey pubKeyMasternode;
-            CKey keyMasternode;
-
-            if(!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, keyMasternode, pubKeyMasternode))
-            {
-            	LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
-            	return;
-            }
-
-            if(!Register(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage)) 
-            {
-            	LogPrintf("CActiveMasternode::ManageStatus() - Error on Register: %s\n", errorMessage.c_str());
-            }
-
-            return;
-        } 
-        else 
-        {
-        	LogPrintf("CActiveMasternode::ManageStatus() - Could not find suitable coins!\n");
         }
+
+        LogPrintf("CActiveMasternode::ManageStatus() - Could not find suitable coins!\n");        
 
     }
 
