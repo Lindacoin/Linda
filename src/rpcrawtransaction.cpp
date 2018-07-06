@@ -588,9 +588,10 @@ Value sendrawtransaction(const Array& params, bool fHelp)
     }
     else
     {
+        std::string errorMessage;
         // push to local node
-        if (!AcceptToMemoryPool(mempool, tx, true, NULL))
-            throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX rejected");
+        if (!AcceptToMemoryPool(mempool, tx, true, NULL, errorMessage))
+            throw JSONRPCError(RPC_MISC_ERROR, errorMessage);
     }
     RelayTransaction(tx);
 

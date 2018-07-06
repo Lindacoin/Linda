@@ -750,35 +750,51 @@ int64_t GetMinFee(const CTransaction& tx, unsigned int nBlockSize, enum GetMinFe
     return nMinFee;
 }
 
-
 bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
                         bool* pfMissingInputs)
+{
+     std::string errorMessage;
+     return AcceptToMemoryPool(pool, tx, fLimitFree, pfMissingInputs, errorMessage);
+}
+
+bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
+                        bool* pfMissingInputs, std::string& errorMessage)
 {
     AssertLockHeld(cs_main);
     if (pfMissingInputs)
         *pfMissingInputs = false;
 
-    if (!tx.CheckTransaction())
+    if (!tx.CheckTransaction()) {
+        errorMessage = "CheckTransaction failed";
         return error("AcceptToMemoryPool : CheckTransaction failed");
+    }
 
     // Coinbase is only valid in a block, not as a loose transaction
-    if (tx.IsCoinBase())
+    if (tx.IsCoinBase()) {
+        errorMessage = "coinbase as individual tx";
         return tx.DoS(100, error("AcceptToMemoryPool : coinbase as individual tx"));
+    }
 
     // ppcoin: coinstake is also only valid in a block, not as a loose transaction
-    if (tx.IsCoinStake())
+    if (tx.IsCoinStake()) {
+        errorMessage = "coinstake as individual tx";
         return tx.DoS(100, error("AcceptToMemoryPool : coinstake as individual tx"));
+    }
 
     // Rather not work on nonstandard transactions (unless -testnet)
     string reason;
-    if (!TestNet() && !IsStandardTx(tx, reason))
+    if (!TestNet() && !IsStandardTx(tx, reason)) {
+        errorMessage = "nonstandard transaction: " + reason;
         return error("AcceptToMemoryPool : nonstandard transaction: %s",
                      reason);
+    }
 
     // is it already in the memory pool?
     uint256 hash = tx.GetHash();
-    if (pool.exists(hash))
+    if (pool.exists(hash)) {
+        errorMessage = "transaction already in memory pool";
         return false;
+    }
 
     // Check for conflicts with in-memory transactions
     {
@@ -798,24 +814,31 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
         CTxDB txdb("r");
 
         // do we already have it?
-        if (txdb.ContainsTx(hash))
+        if (txdb.ContainsTx(hash)) {
+            errorMessage = "transaction already exists";
             return false;
+        }
 
         MapPrevTx mapInputs;
         map<uint256, CTxIndex> mapUnused;
         bool fInvalid = false;
         if (!tx.FetchInputs(txdb, mapUnused, false, false, mapInputs, fInvalid))
         {
-            if (fInvalid)
+            if (fInvalid) {
+                errorMessage = "FetchInputs found invalid tx " + hash.ToString();
                 return error("AcceptToMemoryPool : FetchInputs found invalid tx %s", hash.ToString());
+            }
             if (pfMissingInputs)
                 *pfMissingInputs = true;
+            errorMessage = "FetchInputs failed";
             return false;
         }
 
         // Check for non-standard pay-to-script-hash in inputs
-        if (!TestNet() && !AreInputsStandard(tx, mapInputs))
+        if (!TestNet() && !AreInputsStandard(tx, mapInputs)) {
+            errorMessage = "nonstandard transaction input";
             return error("AcceptToMemoryPool : nonstandard transaction input");
+        }
 
         // Check that the transaction doesn't have an excessive number of
         // sigops, making it impossible to mine. Since the coinbase transaction
@@ -824,10 +847,12 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
         // merely non-standard transaction.
         unsigned int nSigOps = GetLegacySigOpCount(tx);
         nSigOps += GetP2SHSigOpCount(tx, mapInputs);
-        if (nSigOps > MAX_TX_SIGOPS)
+        if (nSigOps > MAX_TX_SIGOPS) {
+            errorMessage = "too many sigops " + hash.ToString() + ", " + boost::lexical_cast<string>(nSigOps) + " > " + boost::lexical_cast<string>(MAX_TX_SIGOPS);
             return tx.DoS(0,
                           error("AcceptToMemoryPool : too many sigops %s, %d > %d",
                                 hash.ToString(), nSigOps, MAX_TX_SIGOPS));
+        }
 
         int64_t nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
         unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
@@ -835,10 +860,12 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
         // Don't accept it if it can't get into a block
         // MBK: Support the tx fee increase at blockheight
         int64_t txMinFee = GetMinFee(tx, 1000, GMF_RELAY, nSize);
-        if ((fLimitFree && nFees < txMinFee) || (!fLimitFree && nFees < (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1)))
+        if ((fLimitFree && nFees < txMinFee) || (!fLimitFree && nFees < (nBestHeight >= TX_FEE_V2_INCREASE_BLOCK ? MIN_TX_FEE_V2 : MIN_TX_FEE_V1))) {
+            errorMessage = "not enough fees " + hash.ToString() + ", " + boost::lexical_cast<string>(nFees) + " < " + boost::lexical_cast<string>(txMinFee);
             return error("AcceptToMemoryPool : not enough fees %s, %d < %d",
                          hash.ToString(),
                          nFees, txMinFee);
+        }
 
         // Continuously rate-limit free transactions
         // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
@@ -858,8 +885,10 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
             nLastTime = nNow;
             // -limitfreerelay unit is thousand-bytes-per-minute
             // At default rate it would take over a month to fill 1GB
-            if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000)
+            if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000) {
+                errorMessage = "free transaction rejected by rate limiter";
                 return error("AcceptToMemoryPool : free transaction rejected by rate limiter");
+            }
             LogPrint("mempool", "Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
             dFreeCount += nSize;
         }
@@ -868,6 +897,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
         if (!tx.ConnectInputs(txdb, mapInputs, mapUnused, CDiskTxPos(1,1,1), pindexBest, false, false, STANDARD_SCRIPT_VERIFY_FLAGS))
         {
+            errorMessage = "ConnectInputs failed " + hash.ToString();
             return error("AcceptToMemoryPool : ConnectInputs failed %s", hash.ToString());
         }
 
@@ -882,6 +912,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
         // can be exploited as a DoS attack.
         if (!tx.ConnectInputs(txdb, mapInputs, mapUnused, CDiskTxPos(1,1,1), pindexBest, false, false, MANDATORY_SCRIPT_VERIFY_FLAGS))
         {
+            errorMessage = "BUG! PLEASE REPORT THIS! ConnectInputs failed against MANDATORY but not STANDARD flags " + hash.ToString();
             return error("AcceptToMemoryPool: : BUG! PLEASE REPORT THIS! ConnectInputs failed against MANDATORY but not STANDARD flags %s", hash.ToString());
         }
     }
