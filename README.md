@@ -25,26 +25,40 @@ The more coins you stake the faster and bigger the reward and has a ROI of 67%.
 
 ## Social
 [Website](https://www.lindacoin.com)
+
 [Discord](https://discord.gg/SHNjQBv)
+
 [Reddit](https://www.reddit.com/r/Lindacoin)
+
 [Twitter](https://twitter.com/lindaproject)
+
 [Facebook](https://www.facebook.com/lindacoincurrency)
+
 [Telegram](https://t.me/OfficaLindaproject)
+
 [GitHub](https://github.com/Lindacoin/Linda)
+
 [YouTube](https://www.youtube.com/channel/UCzfjb47BI9lx7Ih-K6VY-TA)
+
 
 ## Handy Links
 [Linda FAQ, tips, media and tutorials](https://www.lindaprojectinfo.com)
+
 [Bootstrap your wallet](https://bit.ly/lindabootstrap)
 
 ## Realizations
 
 ### MyStakingWallet - Official Web Wallet (Staking & Masternode)
 [Website](https://www.mystakingwallet.com)
+
 [Discord](https://discord.gg/j4MebEY)
+
 [Android App](https://play.google.com/store/apps/details?id=com.mystakingwallet.app)
+
 [iOS App](https://itunes.apple.com/us/app/linda-my-staking-wallet/id1404883927)
+
 
 ### MyNodePool - Official Linda Pool
 [Website](https://www.mynodepool.com)
+
 [Discord](https://discord.gg/2sMJnjk)
